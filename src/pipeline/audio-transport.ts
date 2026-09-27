@@ -1,0 +1,42 @@
+/**
+ * Módulo de Transporte de Áudio e Montagem de Chunks (Phase 2 - T1)
+ * Suporta agregação incremental de chunks recebidos via WebSocket do ESP32.
+ */
+
+export function addWavHeader(
+  pcmBuffer: Buffer,
+  sampleRate: number = 16000,
+  channels: number = 1,
+  bitsPerSample: number = 16
+): Buffer {
+  const dataSize = pcmBuffer.length;
+  const header = Buffer.alloc(44);
+
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16); // Subchunk1Size (16 para PCM)
+  header.writeUInt16LE(1, 20);  // Formato de áudio 1 = PCM
+  header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), 28); // ByteRate
+  header.writeUInt16LE(channels * (bitsPerSample / 8), 32);              // BlockAlign
+  header.writeUInt16LE(bitsPerSample, 34);                               // BitsPerSample
+  header.write('data', 36);
+  header.writeUInt32LE(dataSize, 40);
+
+  return Buffer.concat([header, pcmBuffer]);
+}
+
+export interface WsAudioChunkEvent {
+  type: 'audio_stream_start' | 'audio_stream_end';
+  sampleRate?: number;
+  format?: string;
+  channels?: number;
+  t0?: number;
+  t_first_chunk_sent?: number;
+  t_upload_complete?: number;
+  totalChunks?: number;
+  droppedChunks?: number;
+}
