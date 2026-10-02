@@ -36,12 +36,16 @@ const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
   #define LOG_PRINTF(...) do { Serial.printf(__VA_ARGS__); Serial0.printf(__VA_ARGS__); } while(0)
 #else
   // ESP32 Clássico (WROOM-32, DOIT DevKit v1, etc.)
+  #include "BluetoothSerial.h"
   #define I2S_SD_PIN   32  // Serial Data / DOUT (compartilhado por ambos os microfones)
   #define I2S_WS_PIN   15  // Word Select / LRCLK (compartilhado)
   #define I2S_SCK_PIN  14  // Serial Clock / BCLK (compartilhado)
   #define LED_PIN      2   // LED Azul onboard padrão do ESP32 clássico
   #define LOG_PRINTLN(x) Serial.println(x)
   #define LOG_PRINTF(...) Serial.printf(__VA_ARGS__)
+
+  BluetoothSerial SerialBT;
+  const char* BT_DEVICE_NAME = "EVA_Assistant";
 #endif
 
 #define I2S_SAMPLE_RATE     16000
@@ -93,6 +97,18 @@ uint32_t streamDroppedChunks = 0;
 static int16_t linPreroll[PREROLL_SAMPLES];
 
 unsigned long speakerMuteUntil = 0;
+
+void sendBluetoothCommand(const String& cmd) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  if (SerialBT.hasClient()) {
+    SerialBT.println(cmd);
+    LOG_PRINTF("[BT] 📤 Comando enviado via Bluetooth: %s\n", cmd.c_str());
+  } else {
+    SerialBT.println(cmd);
+    LOG_PRINTF("[BT] 📤 Comando no buffer Bluetooth (sem cliente ativo): %s\n", cmd.c_str());
+  }
+#endif
+}
 
 void fillWavHeader(uint8_t* header, uint32_t pcmDataBytes) {
   uint32_t totalDataLen = pcmDataBytes;
@@ -159,6 +175,31 @@ void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
   if (httpCode == HTTP_CODE_OK || httpCode == 200) {
     String response = http.getString();
     LOG_PRINTF("[EVA] 🤖 Resposta recebida da EVA (HTTP %d):\n%s\n", httpCode, response.c_str());
+
+    // 1. Envia a resposta verbal da EVA via Bluetooth Serial
+    int replyIdx = response.indexOf("\"reply\":");
+    if (replyIdx >= 0) {
+      int replyStart = response.indexOf("\"", replyIdx + 8);
+      if (replyStart >= 0) {
+        int replyEnd = response.indexOf("\"", replyStart + 1);
+        if (replyEnd > replyStart) {
+          String replyText = response.substring(replyStart + 1, replyEnd);
+          sendBluetoothCommand("EVA:" + replyText);
+        }
+      }
+    }
+
+    // 2. Extrai e envia execuções de ferramentas/comandos IoT via Bluetooth Serial
+    int toolIdx = response.indexOf("\"toolExecutions\":");
+    if (toolIdx >= 0) {
+      int toolEnd = response.indexOf("]", toolIdx);
+      if (toolEnd > toolIdx) {
+        String toolsJson = response.substring(toolIdx, toolEnd + 1);
+        LOG_PRINTF("[BT] ⚙️ Comando de ferramenta detectado: %s\n", toolsJson.c_str());
+        sendBluetoothCommand("CMD:" + toolsJson);
+      }
+    }
+
     int durIdx = response.indexOf("\"durationMs\":");
     if (durIdx >= 0) {
       unsigned long dur = response.substring(durIdx + 13).toInt();
@@ -301,10 +342,26 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   LOG_PRINTLN("[WebSocket] Servidor escutando na porta 80.");
+
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  SerialBT.begin(BT_DEVICE_NAME);
+  LOG_PRINTF("[BT] 🔵 Bluetooth Classic Serial iniciado como '%s'. Pronto para pareamento.\n", BT_DEVICE_NAME);
+#endif
 }
 
 void loop() {
   webSocket.loop();
+
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  if (SerialBT.available()) {
+    String btIncoming = SerialBT.readStringUntil('\n');
+    btIncoming.trim();
+    if (btIncoming.length() > 0) {
+      LOG_PRINTF("[BT] 📥 Comando recebido via Bluetooth: %s\n", btIncoming.c_str());
+      SerialBT.printf("ACK:%s\n", btIncoming.c_str());
+    }
+  }
+#endif
 
   size_t bytesRead = 0;
   esp_err_t res = i2s_read(I2S_NUM_0, audioBuffer, sizeof(audioBuffer), &bytesRead, portMAX_DELAY);
