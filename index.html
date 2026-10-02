@@ -1,73 +1,90 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR" data-theme="day" data-viewport="responsive">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>EVA — Presença Inteligente</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237A9A72'/></svg>">
-  
-  <!-- Tipografia do Design System: Fraunces (Display) + Inter (Corpo) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%238DA785'/></svg>">
+
+  <!-- Tipografia Editorial: Newsreader/Fraunces (Display Serif) + Plus Jakarta Sans/Inter (Interface) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     /* =========================================================================
-       DESIGN SYSTEM — EVA (PALETA OFICIAL DO DESIGN SPEC)
+       DESIGN SYSTEM — NOVA IDENTIDADE VISUAL EVA
+       (Referência Tátil Editorial: Alabastro Orgânico & Esfera 3D Cromada)
        ========================================================================= */
     :root {
-      /* Verdes Salvia (Ação, presença, vida) */
-      --sage-100: #E4EAE1;
-      --sage-300: #B9CBB1;
-      --sage-500: #7A9A72;
-      --sage-700: #4F6B4A;
-      --sage-900: #2C3E29;
+      /* MODO DIA (Padrão) */
+      --bg-canvas: #F6F4ED;
+      --bg-card: #E4EDE2;
+      --bg-card-subtle: #EDF3EC;
+      --bg-pill: #E2EAE0;
+      --bg-pill-active: #D5E4D2;
+      --surface-elevated: #FFFFFF;
+      --surface-glass: rgba(255, 255, 255, 0.72);
+      --border-subtle: rgba(118, 142, 114, 0.16);
+      --border-focus: rgba(98, 126, 90, 0.45);
 
-      /* Prata Salvia (Neutros estruturais, mineral) */
-      --silver-sage-100: #EEF0EC;
-      --silver-sage-300: #CBD1C7;
-      --silver-sage-500: #9BA69A;
-      --silver-sage-700: #5C645A;
-      --silver-sage-900: #14180F;
-      --silver-sage-950: #171D14;
+      --text-primary: #1F271D;
+      --text-secondary: #586854;
+      --text-muted: #889984;
 
-      /* Acentos de Contraste */
-      --warm-sand: #D7C7A3;
-      --alert-coral: #C97B6B;
-      --alert-coral-bg: rgba(201, 123, 107, 0.12);
+      /* Esfera 3D & Anel Cromado (Modo Dia - Jade / Salvia Natural) */
+      --orb-highlight: #E5EFE2;
+      --orb-main: #8DA785;
+      --orb-shadow: #506E4A;
+      --orb-deep: #2A3E26;
+      --orb-glow: rgba(141, 167, 133, 0.35);
+      --chrome-ring-start: #E8EDE6;
+      --chrome-ring-mid: #A8B4A4;
+      --chrome-ring-end: #DCE3DA;
 
-      /* Mapeamento Semântico — Modo Escuro (Padrão Oficial) */
-      --bg-base: #14180F;
-      --bg-gradient: radial-gradient(circle at 50% 30%, #171D14 0%, #10130C 100%);
-      --surface-card: rgba(23, 29, 20, 0.72);
-      --surface-card-hover: rgba(32, 40, 28, 0.85);
-      --surface-elevated: #1C2318;
-      --border-subtle: rgba(203, 209, 199, 0.12);
-      --border-focus: rgba(122, 154, 114, 0.45);
-      --text-primary: #EEF0EC;
-      --text-secondary: #9BA69A;
-      --text-tertiary: #5C645A;
-      --ring-glow: rgba(122, 154, 114, 0.18);
-      --ring-border: rgba(185, 203, 177, 0.15);
+      /* Arco / Aura Solar */
+      --halo-line: rgba(214, 196, 150, 0.45);
+      --halo-glow: rgba(238, 226, 194, 0.55);
+
+      /* Destaques e Acentos */
+      --accent-sage: #6D8E67;
+      --accent-coral: #C76D5B;
+      --accent-blue: #4F80B0;
 
       /* Tipografia */
-      --font-display: 'Fraunces', Georgia, serif;
-      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-serif: 'Fraunces', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    [data-theme="light"] {
-      --bg-base: #EEF0EC;
-      --bg-gradient: radial-gradient(circle at 50% 30%, #E4EAE1 0%, #E0E5DC 100%);
-      --surface-card: rgba(255, 255, 255, 0.75);
-      --surface-card-hover: rgba(255, 255, 255, 0.95);
-      --surface-elevated: #FFFFFF;
-      --border-subtle: rgba(79, 107, 74, 0.15);
-      --border-focus: var(--sage-700);
-      --text-primary: #2C3E29;
-      --text-secondary: #4F6B4A;
-      --text-tertiary: #5C645A;
-      --ring-glow: rgba(122, 154, 114, 0.15);
-      --ring-border: rgba(79, 107, 74, 0.22);
+    [data-theme="night"] {
+      /* MODO NOITE (Versão Modo Noite do Mockup) */
+      --bg-canvas: #0D1522;
+      --bg-card: #182335;
+      --bg-card-subtle: #1F2D42;
+      --bg-pill: #1B283C;
+      --bg-pill-active: #273852;
+      --surface-elevated: #162030;
+      --surface-glass: rgba(24, 35, 53, 0.78);
+      --border-subtle: rgba(115, 145, 185, 0.18);
+      --border-focus: rgba(95, 140, 195, 0.5);
+
+      --text-primary: #F2F5F8;
+      --text-secondary: #A0B2C9;
+      --text-muted: #647891;
+
+      /* Esfera 3D & Anel Cromado (Modo Noite - Índigo Meia-Noite) */
+      --orb-highlight: #688BB5;
+      --orb-main: #2A4872;
+      --orb-shadow: #152742;
+      --orb-deep: #08111E;
+      --orb-glow: rgba(55, 105, 175, 0.45);
+      --chrome-ring-start: #C5D4E6;
+      --chrome-ring-mid: #728AA6;
+      --chrome-ring-end: #B4C6DA;
+
+      /* Arco / Aura Lunar */
+      --halo-line: rgba(85, 120, 170, 0.35);
+      --halo-glow: rgba(30, 55, 90, 0.55);
     }
 
     * {
@@ -78,10 +95,9 @@
     }
 
     body {
-      background: var(--bg-gradient);
-      background-color: var(--bg-base);
+      background-color: var(--bg-canvas);
       color: var(--text-primary);
-      font-family: var(--font-body);
+      font-family: var(--font-sans);
       min-height: 100vh;
       overflow-x: hidden;
       display: flex;
@@ -91,2767 +107,1738 @@
       position: relative;
     }
 
-    /* Container Shell Móvel / Desktop */
-    .app-shell {
+    /* Barra Superior Global (Desktop / Mobile) */
+    .top-global-bar {
       width: 100%;
-      max-width: 520px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      padding-bottom: 95px; /* Espaço para a barra inferior */
-    }
-
-    /* =========================================================================
-       CABEÇALHO GLOBAL — "A bolinha é a alma do produto"
-       ========================================================================= */
-    .app-header {
-      padding: 18px 24px;
+      max-width: 1360px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
-      z-index: 40;
+      z-index: 50;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-subtle);
     }
 
-    .brand-group {
+    .brand-cluster {
       display: flex;
       align-items: center;
       gap: 10px;
+      cursor: pointer;
     }
 
     .brand-title {
-      font-family: var(--font-display);
-      font-size: 24px;
-      font-weight: 500;
-      letter-spacing: -0.02em;
-      color: var(--text-primary);
-    }
-
-    .brand-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--sage-500);
-      display: inline-block;
-      box-shadow: 0 0 10px var(--sage-500);
-    }
-
-    /* Mini living orb no header (presente em quase toda tela) */
-    .mini-orb-indicator {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sage-300), var(--sage-500) 60%, var(--sage-700));
-      box-shadow: 0 0 12px var(--sage-500);
-      position: relative;
-      animation: miniBreathe 3.6s ease-in-out infinite alternate;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .mini-orb-indicator::before {
-      content: "";
-      position: absolute;
-      inset: -5px;
-      border-radius: 50%;
-      border: 1px solid var(--ring-border);
-      animation: miniPulse 3.6s ease-in-out infinite alternate;
-    }
-
-    @keyframes miniBreathe {
-      0% { transform: scale(0.92); opacity: 0.85; filter: brightness(0.95); }
-      100% { transform: scale(1.08); opacity: 1; filter: brightness(1.15); box-shadow: 0 0 16px var(--sage-300); }
-    }
-
-    @keyframes miniPulse {
-      0% { transform: scale(0.85); opacity: 0.2; }
-      100% { transform: scale(1.3); opacity: 0.5; }
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .badge-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 11px;
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      letter-spacing: 0.04em;
-    }
-
-    .badge-status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #e07a7a;
-      transition: background 0.3s ease;
-    }
-
-    .badge-status.connected .badge-status-dot {
-      background: var(--sage-500);
-      box-shadow: 0 0 8px var(--sage-500);
-    }
-
-    .btn-icon {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 14px;
-    }
-
-    .btn-icon:hover {
-      background: var(--surface-card-hover);
-      color: var(--text-primary);
-      border-color: var(--border-focus);
-    }
-
-    /* =========================================================================
-       TELAS / VISTAS NAVEGÁVEIS (SHARED DESIGN SYSTEM)
-       ========================================================================= */
-    .tab-view {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      padding: 20px 24px;
-      animation: fadeIn 0.28s ease-out forwards;
-    }
-
-    .tab-view.active {
-      display: flex;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .view-title {
-      font-family: var(--font-display);
-      font-size: 28px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
-    }
-
-    .view-subtitle {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin-bottom: 24px;
-      line-height: 1.45;
-    }
-
-    /* =========================================================================
-       TELA 1: HOME — O CORAÇÃO DO PRODUTO
-       ========================================================================= */
-    #view-home {
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding-top: 10px;
-    }
-
-    /* Palco da Esfera Salvia Central */
-    .orb-stage {
-      position: relative;
-      width: 320px;
-      height: 320px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 10px 0 20px 0;
-    }
-
-    /* Anéis concêntricos pulsantes (respiração orgânica) */
-    .orb-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 1px solid var(--ring-border);
-      pointer-events: none;
-      transition: all 0.5s ease-out;
-    }
-
-    .orb-ring.r1 {
-      width: 220px;
-      height: 220px;
-      animation: ringBreathe 5.2s ease-in-out infinite;
-    }
-
-    .orb-ring.r2 {
-      width: 275px;
-      height: 275px;
-      animation: ringBreathe 5.2s ease-in-out infinite 0.7s;
-      opacity: 0.5;
-    }
-
-    .orb-ring.r3 {
-      width: 320px;
-      height: 320px;
-      animation: ringBreathe 5.2s ease-in-out infinite 1.4s;
-      opacity: 0.25;
-    }
-
-    @keyframes ringBreathe {
-      0%, 100% { transform: scale(0.96); opacity: 0.3; }
-      50% { transform: scale(1.04); opacity: 0.75; }
-    }
-
-    /* Bolinha Principal */
-    .eva-orb {
-      width: 148px;
-      height: 148px;
-      border-radius: 50%;
-      position: relative;
-      background: radial-gradient(circle at 35% 30%, var(--sage-300) 0%, var(--sage-500) 50%, var(--sage-900) 100%);
-      box-shadow:
-        0 0 55px rgba(122, 154, 114, 0.45),
-        inset 0 0 35px rgba(255, 255, 255, 0.12);
-      cursor: pointer;
-      transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease-out;
-      will-change: transform, box-shadow;
-      user-select: none;
-      z-index: 2;
-    }
-
-    .eva-orb::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: radial-gradient(circle at 65% 70%, rgba(255, 255, 255, 0.18), transparent 60%);
-      animation: orbDrift 7s ease-in-out infinite alternate;
-      pointer-events: none;
-    }
-
-    @keyframes orbDrift {
-      0% { transform: translate(0, 0); }
-      100% { transform: translate(-5px, 4px); }
-    }
-
-    /* Estados da Bolinha */
-    .eva-orb.thinking {
-      animation: thinkSpin 1.4s ease-in-out infinite alternate;
-      box-shadow: 0 0 85px rgba(185, 203, 177, 0.75), inset 0 0 40px rgba(255, 255, 255, 0.3);
-    }
-
-    @keyframes thinkSpin {
-      0% { transform: scale(0.97); }
-      100% { transform: scale(1.06); }
-    }
-
-    .eva-orb.speaking {
-      animation: speakPulse 0.4s ease-in-out infinite alternate;
-    }
-
-    @keyframes speakPulse {
-      0% { transform: scale(1); filter: brightness(1); }
-      100% { transform: scale(1.08); filter: brightness(1.25); box-shadow: 0 0 95px rgba(122, 154, 114, 0.85); }
-    }
-
-    /* Estado de aviso de latência prolongada (> 3s) */
-    .eva-orb.latency-notice {
-      box-shadow: 0 0 80px rgba(215, 199, 163, 0.65) !important;
-      border: 1px solid var(--warm-sand);
-    }
-
-    /* Status Textual Minimalista ("Calma antes de informação") */
-    .orb-status-text {
-      font-size: 15px;
+      font-family: var(--font-serif);
+      font-size: 26px;
       font-weight: 400;
-      color: var(--text-secondary);
-      letter-spacing: 0.02em;
-      margin-bottom: 22px;
-      transition: color 0.3s ease;
-      min-height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    /* Balão de Resposta Falada da EVA */
-    .speech-bubble {
-      width: 100%;
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      font-size: 15px;
-      line-height: 1.55;
-      color: var(--text-primary);
-      text-align: left;
-      backdrop-filter: blur(12px);
-      display: none;
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    /* Gaveta de Resumo Rápido na Home */
-    .quick-drawer {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      text-align: left;
-    }
-
-    .drawer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-tertiary);
-      margin-bottom: 2px;
-    }
-
-    .quick-card {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .quick-card:hover {
-      background: var(--surface-card-hover);
-      border-color: var(--border-focus);
-      transform: translateY(-1px);
-    }
-
-    .quick-card-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .quick-card-icon {
-      font-size: 20px;
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: rgba(122, 154, 114, 0.12);
-      color: var(--sage-300);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .quick-card-info h4 {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-
-    .quick-card-info p {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .quick-card-val {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--sage-300);
-    }
-
-    /* Botão Segurar para Falar (Push-to-Talk) */
-    .hold-to-talk-bar {
-      margin-top: 18px;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-hold-talk {
-      width: 100%;
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 28px;
-      padding: 14px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .btn-hold-talk:active,
-    .btn-hold-talk.pressed {
-      background: var(--sage-500);
-      color: #14180F;
-      border-color: var(--sage-300);
-      transform: scale(0.98);
-      box-shadow: 0 0 24px rgba(122, 154, 114, 0.45);
-    }
-
-    /* =========================================================================
-       TELA 2: CONVERSAS — Transparência de Agente & Chips de Ferramentas
-       ========================================================================= */
-    .chat-timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      flex: 1;
-      overflow-y: auto;
-      margin-bottom: 16px;
-      padding-right: 4px;
-    }
-
-    .chat-bubble {
-      max-width: 88%;
-      padding: 14px 18px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.5;
-      position: relative;
-      animation: fadeIn 0.25s ease-out;
-    }
-
-    .chat-bubble.user {
-      align-self: flex-end;
-      background: rgba(122, 154, 114, 0.18);
-      border: 1px solid var(--border-focus);
-      color: var(--text-primary);
-      border-bottom-right-radius: 4px;
-    }
-
-    .chat-bubble.eva {
-      align-self: flex-start;
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      border-bottom-left-radius: 4px;
-    }
-
-    /* Chips de transparência de execução de ferramentas */
-    .tool-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      margin-top: 10px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 500;
-      background: rgba(203, 209, 199, 0.08);
-      border: 1px solid var(--border-subtle);
-      color: var(--sage-300);
-    }
-
-    .tool-chip.critical {
-      border-color: var(--alert-coral);
-      background: var(--alert-coral-bg);
-      color: var(--alert-coral);
-    }
-
-    .chat-actions-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-
-    .btn-clear-chat {
-      background: transparent;
-      border: none;
-      color: var(--text-tertiary);
-      font-size: 12px;
-      cursor: pointer;
-      transition: color 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .btn-clear-chat:hover {
-      color: var(--alert-coral);
-    }
-
-    .chat-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 26px;
-      padding: 6px 14px;
-      backdrop-filter: blur(12px);
-    }
-
-    .chat-input-wrap input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      font-size: 14px;
-      color: var(--text-primary);
-      padding: 8px 4px;
-    }
-
-    .chat-input-wrap input::placeholder {
-      color: var(--text-tertiary);
-    }
-
-    /* =========================================================================
-       TELA 3: AUTOMAÇÕES / ROTINAS — Editor Visual de Blocos
-       ========================================================================= */
-    .routine-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .routine-card {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .routine-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .routine-title-wrap h3 {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-
-    .routine-title-wrap p {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    /* Blocos empilhados: Gatilho -> Ações */
-    .routine-steps-flow {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-left: 8px;
-      border-left: 2px solid var(--border-subtle);
-      margin-left: 6px;
-    }
-
-    .routine-step-block {
-      background: rgba(20, 24, 15, 0.45);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 13px;
+      letter-spacing: -0.5px;
       color: var(--text-primary);
     }
 
-    .routine-step-block.critical {
-      border-color: var(--alert-coral);
-      background: var(--alert-coral-bg);
-    }
-
-    .step-tag {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(122, 154, 114, 0.15);
-      color: var(--sage-300);
-      margin-right: 8px;
-    }
-
-    .routine-step-block.critical .step-tag {
-      background: var(--alert-coral);
-      color: #14180F;
-    }
-
-    /* Switch Component */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background-color: var(--surface-elevated);
-      border: 1px solid var(--border-subtle);
-      transition: .3s;
-      border-radius: 24px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 2px;
-      bottom: 2px;
-      background-color: var(--silver-sage-300);
-      transition: .3s;
-      border-radius: 50%;
-    }
-
-    input:checked + .slider {
-      background-color: var(--sage-500);
-      border-color: var(--sage-300);
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(20px);
-      background-color: #14180F;
-    }
-
-    /* =========================================================================
-       TELA 4: DISPOSITIVOS — Controle Central da Casa & Hardware
-       ========================================================================= */
-    .device-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-
-    .device-card {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 120px;
-      transition: all 0.25s ease;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .device-card:hover {
-      border-color: var(--border-focus);
-      background: var(--surface-card-hover);
-    }
-
-    .device-card.active {
-      border-color: rgba(122, 154, 114, 0.45);
-      background: rgba(122, 154, 114, 0.08);
-    }
-
-    .device-card.critical {
-      border-color: rgba(201, 123, 107, 0.4);
-    }
-
-    .device-card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .device-icon {
-      font-size: 22px;
-      color: var(--sage-300);
-    }
-
-    .device-name {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-top: 12px;
-    }
-
-    .device-room {
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .device-state-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-tertiary);
-      margin-top: 6px;
-    }
-
-    .device-card.active .device-state-label {
-      color: var(--sage-300);
-    }
-
-    /* =========================================================================
-       TELA 5: PERFIS & FAMÍLIA — Segurança Visível
-       ========================================================================= */
-    .profile-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .profile-card {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 16px 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .profile-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: var(--sage-300);
-    }
-
-    .profile-details h4 {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .profile-details p {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    /* =========================================================================
-       TELA 6: CONFIGURAÇÕES, PRIVACIDADE & DIAGNÓSTICO
-       ========================================================================= */
-    .settings-group {
-      margin-bottom: 24px;
-    }
-
-    .settings-group-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-tertiary);
-      margin-bottom: 10px;
-    }
-
-    .settings-item {
-      background: var(--surface-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .settings-item-label h4 {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .settings-item-label p {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    .btn-secondary {
-      background: rgba(203, 209, 199, 0.08);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-secondary:hover {
-      background: var(--surface-card-hover);
-      border-color: var(--border-focus);
-    }
-
-    /* Modal de Confirmação de Segurança (Human-in-the-Loop) */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(16, 19, 12, 0.85);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      animation: fadeIn 0.2s ease-out;
-    }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .security-modal {
-      background: #171D14;
-      border: 1px solid var(--alert-coral);
-      border-radius: 24px;
-      padding: 26px 24px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 0 45px rgba(201, 123, 107, 0.22);
-    }
-
-    .security-modal-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: var(--alert-coral-bg);
-      color: var(--alert-coral);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin: 0 auto 16px auto;
-    }
-
-    .security-modal h3 {
-      font-family: var(--font-display);
-      font-size: 20px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-    }
-
-    .security-modal p {
-      font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 22px;
-    }
-
-    .security-modal-actions {
-      display: flex;
-      gap: 12px;
-    }
-
-    .btn-confirm-coral {
-      flex: 1;
-      background: var(--alert-coral);
-      color: #14180F;
-      border: none;
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: filter 0.2s ease;
-    }
-
-    .btn-confirm-coral:hover {
-      filter: brightness(1.1);
-    }
-
-    .btn-cancel-modal {
-      flex: 1;
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 500;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    /* Painel de Diagnóstico do Hardware (ESP32-S3) */
-    .diag-drawer {
-      position: fixed;
-      bottom: 85px;
-      right: 20px;
-      left: 20px;
-      max-width: 480px;
-      margin: 0 auto;
-      background: #171D14;
-      border: 1px solid var(--border-focus);
-      border-radius: 20px;
-      padding: 18px 20px;
-      z-index: 50;
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
-    }
-
-    .diag-drawer.open {
-      display: flex;
-      animation: fadeIn 0.25s ease-out;
-    }
-
-    .diag-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--sage-300);
-      letter-spacing: 0.05em;
-    }
-
-    .diag-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-
-    .diag-stat-card {
-      background: rgba(20, 24, 15, 0.65);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 8px 12px;
-      text-align: center;
-    }
-
-    .diag-stat-card span {
-      font-size: 10px;
-      color: var(--text-tertiary);
-      display: block;
-      margin-bottom: 2px;
-    }
-
-    .diag-stat-card b {
-      font-size: 14px;
-      color: var(--text-primary);
-    }
-
-    /* Canvas do Osciloscópio */
-    #diag-canvas {
-      width: 100%;
-      height: 52px;
-      border-radius: 8px;
-      background: rgba(14, 18, 11, 0.8);
-      border: 1px solid var(--border-subtle);
-    }
-
-    /* =========================================================================
-       MONITOR SERIAL PERMANENTE (CAPTAÇÃO I2S AO VIVO — ESP32-S3)
-       ========================================================================= */
-    .serial-monitor-card {
-      background: rgba(14, 18, 12, 0.95);
-      border: 1px solid var(--border-focus);
-      border-radius: 20px;
-      padding: 16px 18px;
-      margin: 18px 0 16px 0;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 25px rgba(122, 154, 114, 0.1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .sm-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .sm-title-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .sm-pulse-dot {
+    .brand-status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--text-tertiary);
-      transition: all 0.3s ease;
+      background: var(--accent-sage);
+      box-shadow: 0 0 8px var(--accent-sage);
+      animation: pulseDot 2.2s infinite;
     }
 
-    .sm-pulse-dot.online {
-      background: #7A9A72;
-      box-shadow: 0 0 8px #7A9A72, 0 0 16px rgba(122, 154, 114, 0.6);
-      animation: pulseGreen 1.8s infinite;
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
     }
 
-    .sm-pulse-dot.offline {
-      background: var(--alert-coral);
-      box-shadow: 0 0 6px var(--alert-coral);
-    }
-
-    @keyframes pulseGreen {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.25); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-
-    .sm-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--sage-300);
-    }
-
-    .sm-tag {
-      font-size: 10px;
-      font-family: 'JetBrains Mono', Consolas, monospace;
-      background: rgba(122, 154, 114, 0.12);
-      border: 1px solid rgba(122, 154, 114, 0.25);
-      padding: 2px 7px;
-      border-radius: 6px;
-      color: var(--text-secondary);
-    }
-
-    .sm-controls {
+    .top-actions {
       display: flex;
-      gap: 6px;
       align-items: center;
+      gap: 12px;
     }
 
-    .sm-btn {
-      background: rgba(203, 209, 199, 0.08);
+    .btn-top {
+      background: var(--surface-glass);
       border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      border-radius: 7px;
-      padding: 5px 9px;
-      font-size: 11px;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
       font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s ease;
-    }
-
-    .sm-btn:hover {
-      background: rgba(122, 154, 114, 0.2);
       color: var(--text-primary);
-      border-color: var(--sage-500);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    .sm-btn:active {
-      transform: scale(0.96);
+    .btn-top:hover {
+      background: var(--bg-card);
+      border-color: var(--border-focus);
     }
 
-    /* HUD de Telemetria */
-    .sm-hud {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .sm-hud-item {
-      background: rgba(20, 26, 17, 0.8);
-      border: 1px solid rgba(203, 209, 199, 0.08);
-      border-radius: 10px;
-      padding: 8px 6px;
-      text-align: center;
-    }
-
-    .sm-hud-lbl {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-tertiary);
-      display: block;
-      margin-bottom: 2px;
-    }
-
-    .sm-hud-val {
+    .hw-badge-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 12px;
+      border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      font-family: 'JetBrains Mono', Consolas, monospace;
-      color: var(--text-primary);
-      white-space: nowrap;
-    }
-
-    .sm-hud-state {
-      color: var(--sage-300);
-    }
-
-    /* Barra de Nível VU */
-    .sm-vu-container {
-      margin-bottom: 12px;
-    }
-
-    .sm-vu-bar-wrap {
-      width: 100%;
-      height: 8px;
-      background: rgba(20, 26, 17, 0.9);
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid rgba(203, 209, 199, 0.1);
-      position: relative;
-    }
-
-    .sm-vu-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #4F6B4A 0%, #7A9A72 55%, #D7C7A3 80%, #C97B6B 100%);
-      transition: width 0.06s ease-out;
-      border-radius: 4px;
-    }
-
-    .sm-vu-bar-labels {
       display: flex;
-      justify-content: space-between;
-      font-size: 9px;
-      color: var(--text-tertiary);
-      font-family: 'JetBrains Mono', Consolas, monospace;
-      margin-top: 4px;
-    }
-
-    /* Terminal Console */
-    .sm-terminal-container {
-      background: #090C07;
-      border: 1px solid rgba(203, 209, 199, 0.14);
-      border-radius: 12px;
-      height: 250px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 10px 12px;
-      font-family: 'JetBrains Mono', Consolas, 'SF Mono', monospace;
-      font-size: 11px;
-      line-height: 1.5;
-      scroll-behavior: smooth;
-      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
-    }
-
-    .sm-terminal-container::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .sm-terminal-container::-webkit-scrollbar-thumb {
-      background: rgba(122, 154, 114, 0.25);
-      border-radius: 4px;
-    }
-
-    .sm-terminal-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(122, 154, 114, 0.45);
-    }
-
-    .sm-terminal-body {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .sm-log-line {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: baseline;
-      color: var(--text-primary);
-      animation: fadeIn 0.15s ease-out;
-    }
-
-    .sm-log-time {
-      color: var(--text-tertiary);
-      font-size: 10px;
-      flex-shrink: 0;
-    }
-
-    .sm-tag-pill {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-
-    .sm-tag-pill.boot { background: rgba(185, 203, 177, 0.18); color: #B9CBB1; }
-    .sm-tag-pill.i2s { background: rgba(215, 199, 163, 0.18); color: #D7C7A3; }
-    .sm-tag-pill.mic { background: rgba(122, 154, 114, 0.2); color: #7A9A72; }
-    .sm-tag-pill.ws { background: rgba(79, 107, 74, 0.25); color: #CBD1C7; }
-    .sm-tag-pill.err { background: rgba(201, 123, 107, 0.22); color: #C97B6B; }
-
-    .sm-log-text {
-      color: #CBD1C7;
-      word-break: break-all;
-    }
-
-    .sm-log-bar {
-      color: #7A9A72;
-      letter-spacing: -1px;
-      font-weight: 700;
-    }
-
-    .sm-badge-voice {
-      color: #E4EAE1;
-      background: rgba(122, 154, 114, 0.25);
-      border: 1px solid rgba(122, 154, 114, 0.4);
-      padding: 0 5px;
-      border-radius: 4px;
-      font-size: 10px;
-    }
-
-    .sm-badge-loud {
-      color: #14180F;
-      background: #C97B6B;
-      font-weight: 700;
-      padding: 0 5px;
-      border-radius: 4px;
-      font-size: 10px;
-    }
-
-    .sm-footer {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
-      font-size: 10px;
-      color: var(--text-tertiary);
-      font-family: 'JetBrains Mono', Consolas, monospace;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+
+    .hw-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #7DB675;
+    }
+
+    .hw-badge-dot.offline {
+      background: #D98272;
     }
 
     /* =========================================================================
-       BARRA DE NAVEGAÇÃO INFERIOR FLUTUANTE (Linear / Arc Polish)
+       ESTRUTURA RESPONSIVA: CONTAINER PRINCIPAL
        ========================================================================= */
-    .bottom-nav {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 36px);
-      max-width: 440px;
-      background: rgba(23, 29, 20, 0.88);
-      border: 1px solid var(--border-subtle);
-      border-radius: 36px;
-      padding: 8px 12px;
+    .app-viewport-wrapper {
+      width: 100%;
+      max-width: 1360px;
+      padding: 20px;
       display: flex;
-      align-items: center;
-      justify-content: space-around;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      z-index: 45;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      justify-content: center;
+      flex: 1;
     }
 
-    .nav-item {
+    /* Container de 3 Colunas para Desktop */
+    .desktop-layout {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 390px 1fr 390px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* MODO FRAME DE CELULAR (Preview ou Telas Menores) */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      margin: 0 auto;
+      background: var(--bg-canvas);
+      border-radius: 40px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-subtle);
+      padding: 24px 22px 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* Quando em modo Celular Estrito ou Viewport Pequeno */
+    @media (max-width: 1080px) {
+      .desktop-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .desktop-column-side {
+        width: 100%;
+        max-width: 520px;
+      }
+    }
+
+    /* =========================================================================
+       WIDGET PRINCIPAL DE PRESENÇA (O CARD FIEL À REFERÊNCIA VISUAL)
+       ========================================================================= */
+    .presence-card {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Cabeçalho Home & Sol/Lua */
+    .presence-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .presence-home-title {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+
+    .presence-celestial-icon {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease;
+    }
+
+    .presence-celestial-icon:hover {
+      transform: scale(1.15) rotate(15deg);
+    }
+
+    /* Seção do Relógio com Arco Radiante */
+    .clock-stage {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 11px;
-      font-weight: 500;
+      padding-top: 6px;
+      margin-bottom: 20px;
+    }
+
+    .presence-clock {
+      font-family: var(--font-serif);
+      font-size: 52px;
+      font-weight: 300;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+      line-height: 1;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    /* O Arco da Aura */
+    .orb-aura-arc {
+      position: absolute;
+      top: 36px;
+      width: 250px;
+      height: 160px;
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      border-top: 1.5px solid var(--halo-line);
+      background: radial-gradient(ellipse at 50% 100%, var(--halo-glow) 0%, transparent 72%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* A ESFERA 3D TÁTIL CROMADA */
+    .orb-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 144px;
+      height: 144px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .nav-item svg {
-      width: 20px;
-      height: 20px;
+    .orb-bevel-rim {
+      width: 136px;
+      height: 136px;
+      border-radius: 50%;
+      padding: 5px;
+      background: linear-gradient(135deg, var(--chrome-ring-start) 0%, var(--chrome-ring-mid) 50%, var(--chrome-ring-end) 100%);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12),
+                  inset 0 2px 3px rgba(255, 255, 255, 0.9),
+                  inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .orb-bevel-rim:active {
+      transform: scale(0.95);
+    }
+
+    .orb-sphere-3d {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 36% 30%, var(--orb-highlight) 0%, var(--orb-main) 34%, var(--orb-shadow) 80%, var(--orb-deep) 100%);
+      box-shadow: inset -6px -8px 18px rgba(0, 0, 0, 0.38),
+                  inset 5px 6px 12px rgba(255, 255, 255, 0.55),
+                  0 8px 24px var(--orb-glow);
+      position: relative;
+      animation: orbBreathe 4s ease-in-out infinite;
+    }
+
+    @keyframes orbBreathe {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.025); filter: brightness(1.05); }
+    }
+
+    /* Ondas pulsantes de fala/escuta */
+    .orb-pulse-wave {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1.5px solid var(--orb-main);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .orb-wrapper.speaking .orb-pulse-wave {
+      animation: ripple 1.8s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.45); opacity: 0; }
+    }
+
+    /* SAUDAÇÃO EDITORIAL */
+    .presence-greeting {
+      margin-bottom: 22px;
+    }
+
+    .greeting-salutation {
+      font-family: var(--font-serif);
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+
+    .greeting-username {
+      font-family: var(--font-serif);
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .greeting-username:hover::after {
+      content: ' ✏️';
+      font-size: 16px;
+    }
+
+    /* CARD DUPLO: TEMPERATURA + AGENDA */
+    .weather-agenda-card {
+      background: transparent;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 4px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .weather-side {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-right: 18px;
+      flex-shrink: 0;
+    }
+
+    .weather-temp {
+      font-family: var(--font-sans);
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -1px;
+    }
+
+    .weather-icon-peek {
+      width: 28px;
+      height: 28px;
+      color: var(--text-secondary);
+    }
+
+    .weather-divider {
+      width: 1px;
+      height: 38px;
+      background: var(--border-subtle);
+      margin-right: 18px;
+    }
+
+    .agenda-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .agenda-date {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .agenda-event {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* CARROSSEL DE PREVISÃO SEMANAL */
+    .forecast-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .forecast-pill {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 10px 4px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .forecast-pill.active {
+      border-color: var(--border-focus);
+      background: var(--bg-pill-active);
+    }
+
+    .forecast-pill:hover {
+      transform: translateY(-2px);
+    }
+
+    .forecast-day {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .forecast-icon {
+      width: 22px;
+      height: 22px;
+      color: var(--text-primary);
+    }
+
+    .forecast-temp {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* OS TRÊS ÍCONES DE MÓDULO EXATOS DA REFERÊNCIA */
+    .module-cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .module-card {
+      background: var(--bg-card);
+      border-radius: 18px;
+      aspect-ratio: 1.15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      padding: 12px;
+      color: var(--text-primary);
+    }
+
+    .module-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-focus);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .module-card:active {
+      transform: scale(0.96);
+    }
+
+    .module-icon-svg {
+      width: 44px;
+      height: 44px;
+    }
+
+    /* NAVEGAÇÃO INFERIOR ESTILO APP (HOME, ATIVIDADE, CONFIGURAÇÕES) */
+    .bottom-app-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: auto;
+    }
+
+    .nav-tab-btn {
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    .nav-tab-btn svg {
+      width: 22px;
+      height: 22px;
       stroke: currentColor;
-      stroke-width: 2;
       fill: none;
+      stroke-width: 2;
     }
 
-    .nav-item.active {
-      color: var(--sage-300);
-      background: rgba(122, 154, 114, 0.16);
+    .nav-tab-btn.active {
+      color: var(--text-primary);
     }
 
-    .nav-item:active {
-      transform: scale(0.94);
+    .nav-tab-btn.active svg {
+      stroke-width: 2.4;
+    }
+
+    /* =========================================================================
+       COLUNA CENTRAL DESKTOP: CONVERSAÇÃO, TRANSCRIÇÃO & VOZ EM TEMPO REAL
+       ========================================================================= */
+    .desktop-center-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .voice-hub-panel {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 24px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+
+    .wave-canvas-wrapper {
+      width: 100%;
+      height: 72px;
+      background: var(--bg-card-subtle);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #visualizer-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .speech-transcript-box {
+      min-height: 80px;
+      max-height: 180px;
+      overflow-y: auto;
+      background: var(--bg-card);
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      position: relative;
+    }
+
+    .transcript-empty {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .barge-in-banner {
+      background: rgba(201, 123, 107, 0.14);
+      border: 1px solid rgba(201, 123, 107, 0.35);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: var(--accent-coral);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .barge-in-banner.visible {
+      display: flex;
+    }
+
+    .chat-prompt-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-text-field {
+      flex: 1;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 12px 18px;
+      font-size: 14px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .chat-text-field:focus {
+      border-color: var(--border-focus);
+    }
+
+    .btn-action-talk {
+      background: var(--text-primary);
+      color: var(--bg-canvas);
+      border: none;
+      border-radius: 20px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action-talk:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+
+    .quick-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chip-btn:hover {
+      background: var(--bg-pill-active);
+      color: var(--text-primary);
+    }
+
+    /* =========================================================================
+       COLUNA DIREITA DESKTOP: DISPOSITIVOS IOT, BLUETOOTH & TELEMETRIA
+       ========================================================================= */
+    .desktop-right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-widget-card {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 22px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .devices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .device-tile {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .device-tile:hover {
+      border-color: var(--border-focus);
+    }
+
+    .device-tile.on {
+      background: var(--bg-pill-active);
+      border-color: var(--accent-sage);
+    }
+
+    .device-tile-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .device-tile-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .device-tile-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .switch-pill {
+      width: 38px;
+      height: 22px;
+      background: var(--border-subtle);
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+
+    .switch-pill::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.25s ease;
+    }
+
+    .device-tile.on .switch-pill {
+      background: var(--accent-sage);
+    }
+
+    .device-tile.on .switch-pill::after {
+      transform: translateX(16px);
+    }
+
+    /* Telemetria do Pipeline */
+    .telemetry-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .telemetry-item:last-child {
+      border-bottom: none;
+    }
+
+    .telemetry-val {
+      font-weight: 600;
+      color: var(--accent-sage);
+    }
+
+    /* Terminal Bluetooth / Serial compacto */
+    .bt-monitor-console {
+      background: var(--bg-card-subtle);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      max-height: 100px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    /* =========================================================================
+       MODAL DE INTERAÇÃO DOS MÓDULOS (SAÚDE, CASA, ROTINAS)
+       ========================================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 32px;
+      width: 100%;
+      max-width: 440px;
+      padding: 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+
+    .modal-close-btn {
+      background: var(--bg-card);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
     }
   </style>
 </head>
 <body>
 
-  <div class="app-shell">
+  <!-- BARRA GLOBAL SUPERIOR -->
+  <header class="top-global-bar">
+    <div class="brand-cluster" onclick="switchThemeToggle()" title="Clique para alternar Modo Dia / Noite">
+      <span class="brand-title">eva</span>
+      <span class="brand-status-dot" id="live-status-dot"></span>
+    </div>
 
-    <!-- CABEÇALHO GLOBAL COM MINI BOLINHA VIVA -->
-    <header class="app-header">
-      <div class="brand-group">
-        <h1 class="brand-title">eva</h1>
-        <span class="brand-dot"></span>
-        <!-- Mini esfera viva: pulsa em todas as telas -->
-        <div class="mini-orb-indicator" id="mini-orb" title="EVA está presente" onclick="switchTab('home')"></div>
+    <div class="top-actions">
+      <!-- Alternador de Visualização (Modo Celular vs Desktop Expandido) -->
+      <button class="btn-top" id="btn-toggle-view" onclick="toggleViewportMode()" title="Alternar entre visualização celular e desktop">
+        <span id="btn-view-icon">📱</span>
+        <span id="btn-view-text">Modo Celular</span>
+      </button>
+
+      <!-- Alternador de Tema (Dia / Noite) -->
+      <button class="btn-top" id="btn-toggle-theme" onclick="switchThemeToggle()" title="Alternar Modo Dia / Noite">
+        <span id="theme-btn-icon">☀️</span>
+        <span id="theme-btn-text">Dia</span>
+      </button>
+
+      <!-- Badge de Hardware ESP32 & Bluetooth -->
+      <div class="hw-badge-pill" id="hw-badge-pill" title="Status de conexão com o ESP32 clássico via WebSocket / Bluetooth">
+        <span class="hw-badge-dot" id="hw-dot"></span>
+        <span id="hw-badge-label">ESP32: Conectando...</span>
       </div>
+    </div>
+  </header>
 
-      <div class="header-actions">
-        <div class="badge-status" id="hw-badge">
-          <span class="badge-status-dot"></span>
-          <span id="hw-badge-text">ESP32 Offline</span>
-        </div>
-        <button class="btn-icon" id="btn-toggle-diag" title="Diagnóstico de Hardware" onclick="toggleDiagDrawer()">
-          🎙️
-        </button>
-      </div>
-    </header>
-
-    <!-- =========================================================================
-         TELA 1: HOME (O Coração da EVA)
-         ========================================================================= -->
-    <main class="tab-view active" id="view-home">
-      <!-- Palco da Bolinha -->
-      <div class="orb-stage">
-        <div class="orb-ring r1"></div>
-        <div class="orb-ring r2"></div>
-        <div class="orb-ring r3"></div>
-        <div class="eva-orb" id="main-orb" title="Clique ou segure para falar"></div>
-      </div>
-
-      <!-- Status Minimalista -->
-      <div class="orb-status-text" id="orb-status-text">
-        <span>tudo tranquilo por aqui</span>
-      </div>
-
-      <!-- Balão de Fala da EVA -->
-      <div class="speech-bubble" id="speech-bubble"></div>
+  <!-- CONTAINER DE VISUALIZAÇÃO PRINCIPAL -->
+  <div class="app-viewport-wrapper">
+    <div class="desktop-layout" id="main-layout">
 
       <!-- =====================================================================
-           MONITOR SERIAL PERMANENTE (CAPTAÇÃO I2S AO VIVO — ESP32-S3)
+           COLUNA 1 (OU CARD MOBILE CENTRAL): WIDGET DE PRESENÇA FIEL AO MOCKUP
            ===================================================================== -->
-      <section class="serial-monitor-card" id="serial-monitor-card">
-        <div class="sm-header">
-          <div class="sm-title-group">
-            <span class="sm-pulse-dot" id="sm-pulse-dot"></span>
-            <span class="sm-title">MONITOR SERIAL · CAPTAÇÃO I2S</span>
-            <span class="sm-tag" id="sm-port-tag">COM7 · ws://192.168.100.87/ws</span>
+      <div class="mobile-frame" id="presence-mobile-frame">
+        <div class="presence-card">
+
+          <!-- TOPO: Título Home + Ícone Solar/Lunar -->
+          <div class="presence-top-row">
+            <h2 class="presence-home-title">Home</h2>
+            <div class="presence-celestial-icon" id="celestial-icon" onclick="switchThemeToggle()" title="Alternar Sol / Lua">
+              <!-- Ícone dinâmico inserido via JS (Sol ou Lua com estrela) -->
+            </div>
           </div>
-          <div class="sm-controls">
-            <button class="sm-btn" id="sm-btn-pause" onclick="toggleSerialPause()" title="Pausar / Retomar rolagem">
-              <span id="sm-pause-icon">⏸</span> <span id="sm-pause-text">Pausar</span>
+
+          <!-- RELÓGIO & ESFERA 3D TÁTIL -->
+          <div class="clock-stage">
+            <div class="presence-clock" id="live-clock">12:30</div>
+
+            <!-- Arco da Aura / Halo -->
+            <div class="orb-aura-arc"></div>
+
+            <!-- Esfera com Borda Cromada -->
+            <div class="orb-wrapper" id="orb-trigger" onclick="handleOrbClick()" title="Clique para conversar com a EVA">
+              <div class="orb-pulse-wave"></div>
+              <div class="orb-bevel-rim">
+                <div class="orb-sphere-3d"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SAUDAÇÃO EDITORIAL -->
+          <div class="presence-greeting">
+            <h3 class="greeting-salutation" id="greeting-salutation">Bom dia,</h3>
+            <h3 class="greeting-username" id="greeting-username" onclick="editUserName()" title="Clique para editar o seu nome">[Nome do Usuário]</h3>
+          </div>
+
+          <!-- WIDGET DUPLO: CLIMA & AGENDA -->
+          <div class="weather-agenda-card">
+            <div class="weather-side">
+              <span class="weather-temp">24°C</span>
+              <svg class="weather-icon-peek" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <!-- Nuvem estilizada com raio solar -->
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                <path d="M12 3v2M18.36 5.64l-1.42 1.42M21 12h-2"/>
+              </svg>
+            </div>
+            <div class="weather-divider"></div>
+            <div class="agenda-side">
+              <span class="agenda-date" id="agenda-date-label">QUI, 12 OUT</span>
+              <span class="agenda-event" id="agenda-event-label">Almoço com a família</span>
+            </div>
+          </div>
+
+          <!-- CARROSSEL DE PREVISÃO SEMANAL (5 DIAS) -->
+          <div class="forecast-strip">
+            <div class="forecast-pill active">
+              <span class="forecast-day">QUI</span>
+              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+              </svg>
+              <span class="forecast-temp">24°/16°</span>
+            </div>
+
+            <div class="forecast-pill">
+              <span class="forecast-day">SEX</span>
+              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+              <span class="forecast-temp">24°/16°</span>
+            </div>
+
+            <div class="forecast-pill">
+              <span class="forecast-day">SÁB</span>
+              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                <path d="M16 5l1 1M19 8l1-1"/>
+              </svg>
+              <span class="forecast-temp">24°/16°</span>
+            </div>
+
+            <div class="forecast-pill">
+              <span class="forecast-day">DOM</span>
+              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+              <span class="forecast-temp">24°/16°</span>
+            </div>
+
+            <div class="forecast-pill">
+              <span class="forecast-day">SEG</span>
+              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                <path d="M8 21v1M12 21v1M16 21v1"/>
+              </svg>
+              <span class="forecast-temp">24°/16°</span>
+            </div>
+          </div>
+
+          <!-- OS TRÊS ÍCONES DE MÓDULO EXATOS DA REFERÊNCIA -->
+          <div class="module-cards-row">
+            <!-- MÓDULO 1: CORAÇÃO COM CORTE DE BRILHO (Saúde, Cuidados, Favoritos) -->
+            <div class="module-card" onclick="openModuleModal('saude')" title="Cuidados & Saúde">
+              <svg class="module-icon-svg" viewBox="0 0 48 48">
+                <path d="M24 41 C11 29 4 21 4 13 C4 6.5 9.5 2 16 2 C20 2 22.8 3.8 24 6 C25.2 3.8 28 2 32 2 C38.5 2 44 6.5 44 13 C44 21 37 29 24 41 Z" fill="currentColor"/>
+                <ellipse cx="33" cy="9.5" rx="2.5" ry="5.5" transform="rotate(32 33 9.5)" fill="var(--bg-card)"/>
+              </svg>
+            </div>
+
+            <!-- MÓDULO 2: CASA COM PORTA ENTREABERTA (Casa Inteligente, Dispositivos) -->
+            <div class="module-card" onclick="openModuleModal('dispositivos')" title="Casa Inteligente & Dispositivos">
+              <svg class="module-icon-svg" viewBox="0 0 48 48">
+                <path d="M24 4 L5 20 L9 20 L9 42 L39 42 L39 20 L43 20 Z M20 22 L29 19.5 L29 42 L20 42 Z" fill="currentColor"/>
+              </svg>
+            </div>
+
+            <!-- MÓDULO 3: GLIFO BAUHAUS EMPILHADO (Rotinas, Ações & Automações) -->
+            <div class="module-card" onclick="openModuleModal('rotinas')" title="Rotinas & Ações da EVA">
+              <svg class="module-icon-svg" viewBox="0 0 48 48">
+                <!-- Barra horizontal superior arredondada -->
+                <rect x="6" y="8" width="36" height="9" rx="4.5" fill="currentColor"/>
+                <!-- Haste vertical -->
+                <rect x="18" y="15" width="9" height="26" rx="4.5" fill="currentColor"/>
+                <!-- Pastilha intermediária à direita -->
+                <rect x="22" y="21" width="20" height="8.5" rx="4.25" fill="currentColor"/>
+                <!-- Pastilha inferior à direita -->
+                <rect x="22" y="32.5" width="20" height="8.5" rx="4.25" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- NAVEGAÇÃO INFERIOR DO APP -->
+          <nav class="bottom-app-nav">
+            <button class="nav-tab-btn active" id="tab-btn-home" onclick="selectNavTab('home')">
+              <svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
             </button>
-            <button class="sm-btn" onclick="clearSerialLog()" title="Limpar mensagens do terminal">
-              <span>🗑</span> <span>Limpar</span>
+            <button class="nav-tab-btn" id="tab-btn-atividade" onclick="selectNavTab('atividade')">
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span>Atividade</span>
             </button>
-            <button class="sm-btn" id="sm-btn-copy" onclick="copySerialLog()" title="Copiar logs para área de transferência">
-              <span>📋</span> <span id="sm-copy-text">Copiar</span>
+            <button class="nav-tab-btn" id="tab-btn-config" onclick="selectNavTab('config')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Configurações</span>
+            </button>
+          </nav>
+
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           COLUNA 2 (DESKTOP): PAINEL CONVERSACIONAL, TRANSCRIÇÃO & VOZ
+           ===================================================================== -->
+      <div class="desktop-center-column" id="desktop-center-column">
+        
+        <div class="voice-hub-panel">
+          <div class="panel-header-row">
+            <h3 class="panel-title">Presença & Conversação</h3>
+            <span class="chip-btn" id="voice-state-tag">Pronta para ouvir</span>
+          </div>
+
+          <!-- Visualizador em Onda Sonora -->
+          <div class="wave-canvas-wrapper">
+            <canvas id="visualizer-canvas"></canvas>
+          </div>
+
+          <!-- Banner de Interrupção Conversacional (Barge-In) -->
+          <div class="barge-in-banner" id="barge-in-banner">
+            <span>⚡</span>
+            <span id="barge-in-text">Interrupção detectada! Reformulando resposta...</span>
+          </div>
+
+          <!-- Caixa de Transcrição e Resposta da EVA -->
+          <div class="speech-transcript-box" id="speech-transcript-box">
+            <div class="transcript-empty" id="transcript-placeholder">
+              Aproxime-se e fale <strong>"eva:"</strong> ou clique na esfera para iniciar um diálogo natural.
+            </div>
+            <div id="transcript-content"></div>
+          </div>
+
+          <!-- Chips de Ações Rápidas -->
+          <div class="quick-chips-row">
+            <button class="chip-btn" onclick="sendQuickMessage('Como está o clima para hoje?')">🌤️ Clima de hoje</button>
+            <button class="chip-btn" onclick="sendQuickMessage('Ligue a luz da sala')">💡 Ligar luz da sala</button>
+            <button class="chip-btn" onclick="sendQuickMessage('Destrancar a fechadura')">🔓 Destrancar porta</button>
+            <button class="chip-btn" onclick="sendQuickMessage('Que horas são?')">⏰ Que horas são?</button>
+          </div>
+
+          <!-- Campo de Mensagem & Botão de Voz -->
+          <div class="chat-prompt-row">
+            <input type="text" class="chat-text-field" id="chat-input" placeholder="Digite uma mensagem ou comando para a EVA..." onkeydown="handleInputKey(event)">
+            <button class="btn-action-talk" id="btn-talk" onclick="toggleVoiceRecording()">
+              <span id="btn-talk-icon">🎙️</span>
+              <span id="btn-talk-text">Falar</span>
             </button>
           </div>
         </div>
 
-        <!-- Telemetria HUD -->
-        <div class="sm-hud">
-          <div class="sm-hud-item">
-            <span class="sm-hud-lbl">RMS ATIVO</span>
-            <span class="sm-hud-val" id="sm-hud-rms">0.0</span>
-          </div>
-          <div class="sm-hud-item">
-            <span class="sm-hud-lbl">CANAL</span>
-            <span class="sm-hud-val" id="sm-hud-chan">AUTO (LEFT)</span>
-          </div>
-          <div class="sm-hud-item">
-            <span class="sm-hud-lbl">ESTADO</span>
-            <span class="sm-hud-val sm-hud-state" id="sm-hud-state">Silêncio</span>
-          </div>
-          <div class="sm-hud-item">
-            <span class="sm-hud-lbl">TAXA I2S</span>
-            <span class="sm-hud-val" id="sm-hud-rate">16 kHz / 32b</span>
-          </div>
-        </div>
-
-        <!-- Barra VU em Tempo Real -->
-        <div class="sm-vu-container">
-          <div class="sm-vu-bar-wrap">
-            <div class="sm-vu-bar-fill" id="sm-vu-bar-fill"></div>
-          </div>
-          <div class="sm-vu-bar-labels">
-            <span>0% (SILÊNCIO)</span>
-            <span>25%</span>
-            <span>50% (VOZ)</span>
-            <span>75%</span>
-            <span>100% (PICO)</span>
-          </div>
-        </div>
-
-        <!-- Terminal Console Scrollável -->
-        <div class="sm-terminal-container" id="sm-terminal-container">
-          <div class="sm-terminal-body" id="sm-terminal-body">
-            <!-- Linhas de log injetadas dinamicamente -->
-          </div>
-        </div>
-
-        <!-- Rodapé do Monitor -->
-        <div class="sm-footer">
-          <span id="sm-footer-info">MS3625 MEMS · SD:13 WS:1 SCK:2 · 115200 baud</span>
-          <span id="sm-line-count">0 eventos</span>
-        </div>
-      </section>
-
-      <!-- Gaveta de Resumo Rápido -->
-      <div class="quick-drawer">
-        <div class="drawer-header">
-          <span>Resumo Inteligente</span>
-          <span id="quick-time">Agora</span>
-        </div>
-
-        <div class="quick-card" onclick="askQuickPrompt('Qual a previsão do tempo para hoje?')">
-          <div class="quick-card-left">
-            <div class="quick-card-icon">🌤️</div>
-            <div class="quick-card-info">
-              <h4>Previsão do Tempo</h4>
-              <p>São Paulo · Parcialmente nublado</p>
-            </div>
-          </div>
-          <span class="quick-card-val">24°C</span>
-        </div>
-
-        <div class="quick-card" onclick="askQuickPrompt('Quais são meus próximos compromissos da agenda?')">
-          <div class="quick-card-left">
-            <div class="quick-card-icon">📅</div>
-            <div class="quick-card-info">
-              <h4>Próximo Lembrete</h4>
-              <p>Revisão de Firmware ESP32</p>
-            </div>
-          </div>
-          <span class="quick-card-val">14:00</span>
-        </div>
-
-        <div class="quick-card" onclick="switchTab('devices')">
-          <div class="quick-card-left">
-            <div class="quick-card-icon">💡</div>
-            <div class="quick-card-info">
-              <h4>Dispositivos da Casa</h4>
-              <p id="active-devices-summary">Luz da sala ligada</p>
-            </div>
-          </div>
-          <span class="quick-card-val" id="active-devices-count">1 ativo</span>
-        </div>
       </div>
 
-      <!-- Atalho de Fala Manual (Push-to-Talk) -->
-      <div class="hold-to-talk-bar">
-        <button class="btn-hold-talk" id="btn-hold-talk">
-          <span>🎙️</span>
-          <span>Segure para falar</span>
-        </button>
-      </div>
-    </main>
+      <!-- =====================================================================
+           COLUNA 3 (DESKTOP): CASA INTELIGENTE, COMANDOS BLUETOOTH & TELEMETRIA
+           ===================================================================== -->
+      <div class="desktop-right-column" id="desktop-right-column">
 
-    <!-- =========================================================================
-         TELA 2: CONVERSAS & HISTÓRICO TRANSPARENTE
-         ========================================================================= -->
-    <section class="tab-view" id="view-chat">
-      <h2 class="view-title">Conversas</h2>
-      <p class="view-subtitle">Transparência completa de interações e ações físicas de ferramentas.</p>
-
-      <div class="chat-actions-bar">
-        <button class="btn-clear-chat" onclick="clearChatHistory()">
-          <span>🗑️</span>
-          <span>Apagar histórico</span>
-        </button>
-        <span style="font-size: 12px; color: var(--text-tertiary);" id="chat-count">0 interações</span>
-      </div>
-
-      <div class="chat-timeline" id="chat-timeline">
-        <!-- Itens de conversa injetados dinamicamente -->
-      </div>
-
-      <div class="chat-input-wrap">
-        <input type="text" id="chat-text-input" placeholder="Converse com a EVA..." onkeydown="handleInputKey(event)">
-        <button class="btn-icon" onclick="sendTextMessage()" style="border:none; background:transparent;">➔</button>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         TELA 3: AUTOMAÇÕES & ROTINAS
-         ========================================================================= -->
-    <section class="tab-view" id="view-routines">
-      <h2 class="view-title">Rotinas</h2>
-      <p class="view-subtitle">Sequências de ações orquestradas sem complicação.</p>
-
-      <div class="routine-list">
-        <!-- Rotina 1: Modo Cinema -->
-        <div class="routine-card">
-          <div class="routine-header">
-            <div class="routine-title-wrap">
-              <h3>Modo Cinema</h3>
-              <p>Iluminação baixa e conforto térmico</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" checked onchange="toggleRoutine('cinema', this.checked)">
-              <span class="slider"></span>
-            </label>
+        <!-- CARD: CASA INTELIGENTE & ATUADORES -->
+        <div class="side-widget-card">
+          <div class="panel-header-row">
+            <h3 class="panel-title">Casa Inteligente</h3>
+            <span style="font-size: 11px; font-weight: 700; color: var(--accent-sage);">BLUETOOTH SPP</span>
           </div>
-          <div class="routine-steps-flow">
-            <div class="routine-step-block">
-              <div><span class="step-tag">Gatilho</span> 🗣️ "EVA, modo cinema"</div>
+
+          <div class="devices-grid">
+            <!-- Dispositivo 1: Luz da Sala -->
+            <div class="device-tile on" id="tile-luz-sala" onclick="toggleDevice('light')">
+              <div class="device-tile-top">
+                <span class="device-tile-name">Luz da Sala</span>
+                <div class="switch-pill"></div>
+              </div>
+              <span class="device-tile-sub">Lâmpada Principal</span>
             </div>
-            <div class="routine-step-block">
-              <div><span class="step-tag">Ação</span> 💡 Apagar luzes da sala</div>
+
+            <!-- Dispositivo 2: Ar Condicionado -->
+            <div class="device-tile" id="tile-ar-quarto" onclick="toggleDevice('ac')">
+              <div class="device-tile-top">
+                <span class="device-tile-name">Ar Condic.</span>
+                <div class="switch-pill"></div>
+              </div>
+              <span class="device-tile-sub">Quarto Principal</span>
             </div>
-            <div class="routine-step-block">
-              <div><span class="step-tag">Ação</span> ❄️ Ar-condicionado em 21°C</div>
+
+            <!-- Dispositivo 3: Ventilador -->
+            <div class="device-tile" id="tile-ventilador" onclick="toggleDevice('fan')">
+              <div class="device-tile-top">
+                <span class="device-tile-name">Ventilador</span>
+                <div class="switch-pill"></div>
+              </div>
+              <span class="device-tile-sub">Sala de Estar</span>
+            </div>
+
+            <!-- Dispositivo 4: Fechadura -->
+            <div class="device-tile" id="tile-fechadura" onclick="toggleDevice('lock')">
+              <div class="device-tile-top">
+                <span class="device-tile-name">Fechadura</span>
+                <div class="switch-pill"></div>
+              </div>
+              <span class="device-tile-sub" id="lock-sub-label">Trancada</span>
             </div>
           </div>
         </div>
 
-        <!-- Rotina 2: Saindo de Casa (Ação Crítica) -->
-        <div class="routine-card">
-          <div class="routine-header">
-            <div class="routine-title-wrap">
-              <h3>Saindo de Casa</h3>
-              <p>Segurança física e economia de energia</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" checked onchange="toggleRoutine('leaving', this.checked)">
-              <span class="slider"></span>
-            </label>
+        <!-- CARD: TELEMETRIA DO PIPELINE DE LATÊNCIA (FASE 2) -->
+        <div class="side-widget-card">
+          <div class="panel-header-row">
+            <h3 class="panel-title">Latência & Pipeline</h3>
+            <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);" id="last-latency-total">~1.1s total</span>
           </div>
-          <div class="routine-steps-flow">
-            <div class="routine-step-block">
-              <div><span class="step-tag">Gatilho</span> 🗣️ "EVA, estou saindo"</div>
+
+          <div class="telemetry-list">
+            <div class="telemetry-item">
+              <span>t0 · Detecção VAD (Fim de Fala)</span>
+              <span class="telemetry-val" id="lat-t0">0 ms</span>
             </div>
-            <div class="routine-step-block">
-              <div><span class="step-tag">Ação</span> 💡 Desligar todos os dispositivos</div>
+            <div class="telemetry-item">
+              <span>t1 · Primeiro Byte no Backend</span>
+              <span class="telemetry-val" id="lat-t1">-- ms</span>
             </div>
-            <div class="routine-step-block critical">
-              <div><span class="step-tag">Segurança</span> 🔒 Trancar fechadura principal</div>
+            <div class="telemetry-item">
+              <span>t2 · Transcrição Whisper STT</span>
+              <span class="telemetry-val" id="lat-t2">-- ms</span>
             </div>
+            <div class="telemetry-item">
+              <span>t3 · Primeiro Token do LLM</span>
+              <span class="telemetry-val" id="lat-t3">-- ms</span>
+            </div>
+            <div class="telemetry-item">
+              <span>t4 · Limite da 1ª Frase</span>
+              <span class="telemetry-val" id="lat-t4">-- ms</span>
+            </div>
+            <div class="telemetry-item">
+              <span>t6 · Primeiro Áudio TTS Disparado</span>
+              <span class="telemetry-val" id="lat-t6">-- ms</span>
+            </div>
+          </div>
+
+          <!-- Console de Comandos Bluetooth Enviados -->
+          <div class="bt-monitor-console" id="bt-console">
+            <div>[BT] 🔵 Serial Classic conectado em COM8 ('EVA_Assistant')</div>
+            <div>[BT] Pronto para despacho de ferramentas IoT</div>
           </div>
         </div>
 
-        <!-- Rotina 3: Bom Dia -->
-        <div class="routine-card">
-          <div class="routine-header">
-            <div class="routine-title-wrap">
-              <h3>Bom Dia</h3>
-              <p>Despertar calmo com dados do dia</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" checked onchange="toggleRoutine('morning', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="routine-steps-flow">
-            <div class="routine-step-block">
-              <div><span class="step-tag">Gatilho</span> ⏰ Todos os dias às 07:30</div>
-            </div>
-            <div class="routine-step-block">
-              <div><span class="step-tag">Ação</span> 🌤️ Falar previsão do tempo</div>
-            </div>
-            <div class="routine-step-block">
-              <div><span class="step-tag">Ação</span> 📅 Resumo dos compromissos da agenda</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         TELA 4: DISPOSITIVOS
-         ========================================================================= -->
-    <section class="tab-view" id="view-devices">
-      <h2 class="view-title">Dispositivos</h2>
-      <p class="view-subtitle">Controle direto de hardware e atuadores conectados.</p>
-
-      <div class="settings-group-title">Unidades da EVA</div>
-      <div class="profile-card" style="margin-bottom: 20px;">
-        <div class="profile-avatar">🎙️</div>
-        <div class="profile-details" style="flex:1;">
-          <h4 id="eva-unit-name">EVA Sala de Estar</h4>
-          <p id="eva-unit-ip">ESP32-S3 · 192.168.100.87</p>
-        </div>
-        <span class="badge-status connected" id="eva-unit-badge">Online</span>
       </div>
 
-      <div class="settings-group-title">Dispositivos Conectados</div>
-      <div class="device-grid">
-        <!-- Luz de Teto -->
-        <div class="device-card active" id="dev-light" onclick="toggleDevice('light')">
-          <div class="device-card-top">
-            <span class="device-icon">💡</span>
-            <label class="switch" onclick="event.stopPropagation()">
-              <input type="checkbox" id="check-dev-light" checked onchange="toggleDevice('light', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div>
-            <div class="device-name">Luz de Teto</div>
-            <div class="device-room">Sala de Estar</div>
-            <div class="device-state-label" id="state-dev-light">Ligada</div>
-          </div>
-        </div>
-
-        <!-- Ar-Condicionado -->
-        <div class="device-card" id="dev-ac" onclick="toggleDevice('ac')">
-          <div class="device-card-top">
-            <span class="device-icon">❄️</span>
-            <label class="switch" onclick="event.stopPropagation()">
-              <input type="checkbox" id="check-dev-ac" onchange="toggleDevice('ac', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div>
-            <div class="device-name">Ar-Condicionado</div>
-            <div class="device-room">Quarto</div>
-            <div class="device-state-label" id="state-dev-ac">Desligado</div>
-          </div>
-        </div>
-
-        <!-- Ventilador -->
-        <div class="device-card" id="dev-fan" onclick="toggleDevice('fan')">
-          <div class="device-card-top">
-            <span class="device-icon">🌀</span>
-            <label class="switch" onclick="event.stopPropagation()">
-              <input type="checkbox" id="check-dev-fan" onchange="toggleDevice('fan', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div>
-            <div class="device-name">Ventilador</div>
-            <div class="device-room">Escritório</div>
-            <div class="device-state-label" id="state-dev-fan">Desligado</div>
-          </div>
-        </div>
-
-        <!-- Fechadura Inteligente (AÇÃO CRÍTICA COM CONFIRMAÇÃO) -->
-        <div class="device-card critical" id="dev-lock" onclick="triggerDoorLockAction()">
-          <div class="device-card-top">
-            <span class="device-icon" style="color:var(--alert-coral);">🔒</span>
-            <span style="font-size:10px; font-weight:600; color:var(--alert-coral); text-transform:uppercase;">Crítico</span>
-          </div>
-          <div>
-            <div class="device-name">Fechadura Inteligente</div>
-            <div class="device-room">Porta Principal</div>
-            <div class="device-state-label" id="state-dev-lock" style="color:var(--alert-coral);">Trancada</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         TELA 5: AJUSTES & PRIVACIDADE
-         ========================================================================= -->
-    <section class="tab-view" id="view-settings">
-      <h2 class="view-title">Ajustes</h2>
-      <p class="view-subtitle">Segurança, transparência de dados e hardware.</p>
-
-      <div class="settings-group">
-        <div class="settings-group-title">Privacidade e Retenção</div>
-        <div class="settings-item">
-          <div class="settings-item-label">
-            <h4>Retenção Zero de Áudio</h4>
-            <p>Seus fluxos de voz são descartados após a resposta</p>
-          </div>
-          <span style="color: var(--sage-300); font-size:12px; font-weight:600;">Ativo</span>
-        </div>
-        <div class="settings-item">
-          <div class="settings-item-label">
-            <h4>Exportação de Dados</h4>
-            <p>Baixe todos os logs e eventos em formato JSON</p>
-          </div>
-          <button class="btn-secondary" onclick="exportDataArchive()">Exportar</button>
-        </div>
-      </div>
-
-      <div class="settings-group">
-        <div class="settings-group-title">Aparência & Experiência</div>
-        <div class="settings-item">
-          <div class="settings-item-label">
-            <h4>Modo Escuro</h4>
-            <p>O padrão visual orgânico e mineral da EVA</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="theme-toggle" checked onchange="toggleTheme(this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="settings-item">
-          <div class="settings-item-label">
-            <h4>Modo Apresentação (Demo)</h4>
-            <p>Usa dados simulados para demonstrar sem expor a casa</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="demo-toggle" onchange="toggleDemoMode(this.checked)">
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="settings-group">
-        <div class="settings-group-title">Conexão ESP32-S3</div>
-        <div class="settings-item">
-          <div class="settings-item-label">
-            <h4>Endereço IP do Hardware</h4>
-            <p>WebSocket para transmissão de áudio I2S</p>
-          </div>
-          <input type="text" id="esp-ip-input" value="192.168.100.87" style="background:var(--surface-elevated); border:1px solid var(--border-subtle); color:var(--text-primary); padding:6px 10px; border-radius:8px; font-size:12px; width:130px; text-align:center;">
-        </div>
-        <button class="btn-secondary" style="width:100%; margin-top:4px;" onclick="reconnectESP32()">Reconectar Hardware</button>
-      </div>
-    </section>
-
-    <!-- =========================================================================
-         MODAL DE SEGURANÇA (HUMAN-IN-THE-LOOP — ALERTA CORAL)
-         ========================================================================= -->
-    <div class="modal-overlay" id="security-modal">
-      <div class="security-modal">
-        <div class="security-modal-icon">⚠️</div>
-        <h3 id="modal-title">Autorização Crítica</h3>
-        <p id="modal-desc">Você realmente deseja destrancar a fechadura da porta principal? Esta ação concede acesso físico à residência.</p>
-        <div class="security-modal-actions">
-          <button class="btn-cancel-modal" onclick="closeSecurityModal()">Cancelar</button>
-          <button class="btn-confirm-coral" id="btn-modal-confirm" onclick="confirmSecurityAction()">Autorizar</button>
-        </div>
-      </div>
     </div>
-
-    <!-- =========================================================================
-         DRAWER DE DIAGNÓSTICO DO MICROFONE ESP32
-         ========================================================================= -->
-    <div class="diag-drawer" id="diag-drawer">
-      <div class="diag-top">
-        <span>DIAGNÓSTICO MICROFONE I2S (MS3625)</span>
-        <span style="cursor:pointer; color:var(--text-tertiary);" onclick="toggleDiagDrawer()">✕</span>
-      </div>
-
-      <div class="diag-stats">
-        <div class="diag-stat-card">
-          <span>RMS BRUTO</span>
-          <b id="diag-rms">0.0</b>
-        </div>
-        <div class="diag-stat-card">
-          <span>VOLUME %</span>
-          <b id="diag-level">0%</b>
-        </div>
-        <div class="diag-stat-card">
-          <span>AMOSTRAS</span>
-          <b id="diag-fps">0 pacotes/s</b>
-        </div>
-      </div>
-
-      <canvas id="diag-canvas" width="400" height="52"></canvas>
-
-      <div style="font-size:11px; color:var(--text-tertiary); line-height:1.4;">
-        <b>Pinagem ESP32-S3:</b> SD: GPIO 13 | WS: GPIO 1 | SCK: GPIO 2 | L/R: GND | VDD: 3.3V
-      </div>
-    </div>
-
-    <!-- =========================================================================
-       BARRA DE NAVEGAÇÃO INFERIOR
-       ========================================================================= -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" id="nav-home" onclick="switchTab('home')">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Início</span>
-      </button>
-      <button class="nav-item" id="nav-chat" onclick="switchTab('chat')">
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span>Conversas</span>
-      </button>
-      <button class="nav-item" id="nav-routines" onclick="switchTab('routines')">
-        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        <span>Rotinas</span>
-      </button>
-      <button class="nav-item" id="nav-devices" onclick="switchTab('devices')">
-        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Dispositivos</span>
-      </button>
-      <button class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Ajustes</span>
-      </button>
-    </nav>
-
   </div>
 
+  <!-- =========================================================================
+       MODAL DE MÓDULOS (SAÚDE, CASA INTELIGENTE, ROTINAS)
+       ========================================================================= -->
+  <div class="modal-overlay" id="module-modal" onclick="closeModuleModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h4 class="modal-title" id="modal-title">Detalhes do Módulo</h4>
+        <button class="modal-close-btn" onclick="closeModuleModal()">✕</button>
+      </div>
+      <div id="modal-body-content">
+        <!-- Injetado dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       LOGICA JAVASCRIPT: SINCRONIZAÇÃO, VOZ, BLUETOOTH & ESTADO
+       ========================================================================= -->
   <script>
-    // =========================================================================
-    // ESTADO GLOBAL DA APLICAÇÃO
-    // =========================================================================
+    // Estado da Aplicação
     const state = {
+      theme: localStorage.getItem('eva_theme') || 'day',
+      viewport: localStorage.getItem('eva_viewport') || 'desktop',
+      userName: localStorage.getItem('eva_user_name') || 'Rafael',
+      isRecording: false,
       isSpeaking: false,
-      isThinking: false,
-      isListening: false,
-      conversationHistory: [],
+      isEsp32Connected: false,
       devices: {
         light: true,
         ac: false,
         fan: false,
-        lock: false, // false = trancada
+        lock: false
       },
-      pendingAction: null,
-      esp32Connected: false,
-      lastLatencyTimeout: null,
+      mediaRecorder: null,
+      audioChunks: [],
+      audioContext: null,
+      audioQueue: [],
+      isPlayingAudio: false
     };
 
-    // Elementos DOM
-    const mainOrb = document.getElementById('main-orb');
-    const miniOrb = document.getElementById('mini-orb');
-    const statusText = document.getElementById('orb-status-text');
-    const speechBubble = document.getElementById('speech-bubble');
-    const hwBadge = document.getElementById('hw-badge');
-    const hwBadgeText = document.getElementById('hw-badge-text');
-    const chatTimeline = document.getElementById('chat-timeline');
-    const chatTextInput = document.getElementById('chat-text-input');
-    const btnHoldTalk = document.getElementById('btn-hold-talk');
-    const securityModal = document.getElementById('security-modal');
+    // Inicialização do Tema e Relógio
+    function initThemeAndClock() {
+      // Aplica tema
+      document.documentElement.setAttribute('data-theme', state.theme);
+      updateThemeButtons();
 
-    // Haptic feedback simulado
-    function triggerHaptic(duration = 15) {
-      if (navigator.vibrate) {
-        try { navigator.vibrate(duration); } catch(e) {}
-      }
+      // Aplica modo viewport
+      applyViewportMode(state.viewport);
+
+      // Aplica nome de usuário
+      const nameEl = document.getElementById('greeting-username');
+      if (nameEl) nameEl.textContent = state.userName;
+
+      // Inicia relógio em tempo real
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // Inicia visualizador canvas
+      initVisualizer();
+
+      // Conecta ao stream SSE de eventos do ESP32
+      connectSerialStream();
     }
 
-    // Navegação entre abas
-    function switchTab(tabId) {
-      triggerHaptic(10);
-      document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-
-      const targetView = document.getElementById(`view-${tabId}`);
-      const targetNav = document.getElementById(`nav-${tabId}`);
-
-      if (targetView) targetView.classList.add('active');
-      if (targetNav) targetNav.classList.add('active');
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // =========================================================================
-    // MONITOR SERIAL PERMANENTE & WEBSOCKET DO ESP32-S3
-    // =========================================================================
-    let ws = null;
-    let waveHistory = new Array(70).fill(0);
-    const diagCanvas = document.getElementById('diag-canvas');
-    const diagCtx = diagCanvas ? diagCanvas.getContext('2d') : null;
-    let packetCount = 0;
-    let lastHzTime = performance.now();
-
-    // Elementos do Monitor Serial
-    const smPulseDot = document.getElementById('sm-pulse-dot');
-    const smPortTag = document.getElementById('sm-port-tag');
-    const smHudRms = document.getElementById('sm-hud-rms');
-    const smHudChan = document.getElementById('sm-hud-chan');
-    const smHudState = document.getElementById('sm-hud-state');
-    const smVuBarFill = document.getElementById('sm-vu-bar-fill');
-    const smTerminalContainer = document.getElementById('sm-terminal-container');
-    const smTerminalBody = document.getElementById('sm-terminal-body');
-    const smLineCount = document.getElementById('sm-line-count');
-    const smPauseIcon = document.getElementById('sm-pause-icon');
-    const smPauseText = document.getElementById('sm-pause-text');
-    const smCopyText = document.getElementById('sm-copy-text');
-
-    let isSerialAutoScroll = true;
-    let serialLineCounter = 0;
-    const MAX_SERIAL_LINES = 250;
-    let lastTerminalLogTime = 0;
-    let lastVoiceSpikeTime = 0;
-
-    function appendSerialLog(tag, content, type = 'mic', isRawHtml = false) {
-      if (!smTerminalBody) return;
-      serialLineCounter++;
-
+    // Atualiza relógio e saudações conforme o horário
+    function updateClock() {
       const now = new Date();
-      const h = String(now.getHours()).padStart(2, '0');
-      const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      const ms = String(now.getMilliseconds()).padStart(3, '0');
-      const timeStr = `[${h}:${m}:${s}.${ms}]`;
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const clockEl = document.getElementById('live-clock');
+      if (clockEl) clockEl.textContent = `${hours}:${minutes}`;
 
-      const row = document.createElement('div');
-      row.className = 'sm-log-line';
+      // Saudação contextual
+      const h = now.getHours();
+      let greeting = 'Bom dia,';
+      if (h >= 12 && h < 18) greeting = 'Boa tarde,';
+      else if (h >= 18 || h < 5) greeting = 'Boa noite,';
 
-      const timeEl = document.createElement('span');
-      timeEl.className = 'sm-log-time';
-      timeEl.textContent = timeStr;
-      row.appendChild(timeEl);
+      const salutationEl = document.getElementById('greeting-salutation');
+      if (salutationEl) salutationEl.textContent = greeting;
 
-      const tagEl = document.createElement('span');
-      tagEl.className = `sm-tag-pill ${type}`;
-      tagEl.textContent = `[${tag}]`;
-      row.appendChild(tagEl);
-
-      const textEl = document.createElement('span');
-      textEl.className = 'sm-log-text';
-      if (isRawHtml) {
-        textEl.innerHTML = content;
-      } else {
-        textEl.textContent = content;
-      }
-      row.appendChild(textEl);
-
-      smTerminalBody.appendChild(row);
-
-      while (smTerminalBody.children.length > MAX_SERIAL_LINES) {
-        smTerminalBody.removeChild(smTerminalBody.firstChild);
-      }
-
-      if (smLineCount) {
-        smLineCount.textContent = `${serialLineCounter} eventos`;
-      }
-
-      if (isSerialAutoScroll && smTerminalContainer) {
-        smTerminalContainer.scrollTop = smTerminalContainer.scrollHeight;
-      }
+      // Formata data do card
+      const dias = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+      const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+      const dateLabel = `${dias[now.getDay()]}, ${now.getDate()} ${meses[now.getMonth()]}`;
+      const dateEl = document.getElementById('agenda-date-label');
+      if (dateEl) dateEl.textContent = dateLabel;
     }
 
-    function toggleSerialPause() {
-      triggerHaptic(15);
-      isSerialAutoScroll = !isSerialAutoScroll;
-      if (smPauseText) smPauseText.textContent = isSerialAutoScroll ? 'Pausar' : 'Retomar';
-      if (smPauseIcon) smPauseIcon.textContent = isSerialAutoScroll ? '⏸' : '▶';
-      if (isSerialAutoScroll && smTerminalContainer) {
-        smTerminalContainer.scrollTop = smTerminalContainer.scrollHeight;
-      }
+    // Alternador de Tema Dia / Noite
+    function switchThemeToggle() {
+      state.theme = state.theme === 'day' ? 'night' : 'day';
+      localStorage.setItem('eva_theme', state.theme);
+      document.documentElement.setAttribute('data-theme', state.theme);
+      updateThemeButtons();
     }
 
-    function clearSerialLog() {
-      triggerHaptic(15);
-      if (smTerminalBody) smTerminalBody.innerHTML = '';
-      serialLineCounter = 0;
-      if (smLineCount) smLineCount.textContent = '0 eventos';
-      appendSerialLog('SYS', 'Terminal limpo pelo usuário.', 'boot');
-    }
+    function updateThemeButtons() {
+      const isNight = state.theme === 'night';
+      const iconEl = document.getElementById('celestial-icon');
+      const themeBtnIcon = document.getElementById('theme-btn-icon');
+      const themeBtnText = document.getElementById('theme-btn-text');
 
-    async function copySerialLog() {
-      triggerHaptic(20);
-      if (!smTerminalBody) return;
-      let fullText = '';
-      smTerminalBody.querySelectorAll('.sm-log-line').forEach(line => {
-        fullText += line.innerText.replace(/\s+/g, ' ').trim() + '\n';
-      });
-      try {
-        await navigator.clipboard.writeText(fullText);
-        if (smCopyText) {
-          smCopyText.textContent = 'Copiado! ✓';
-          setTimeout(() => { if (smCopyText) smCopyText.textContent = 'Copiar'; }, 2000);
+      if (isNight) {
+        if (iconEl) {
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #A0B2C9;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            <circle cx="19" cy="5" r="1" fill="currentColor"/>
+          </svg>`;
         }
-      } catch (err) {
-        console.warn('Falha ao copiar:', err);
+        if (themeBtnIcon) themeBtnIcon.textContent = '🌙';
+        if (themeBtnText) themeBtnText.textContent = 'Noite';
+      } else {
+        if (iconEl) {
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #7A9A72;">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>`;
+        }
+        if (themeBtnIcon) themeBtnIcon.textContent = '☀️';
+        if (themeBtnText) themeBtnText.textContent = 'Dia';
       }
     }
 
-    function handleIncomingAudioPacket(rawData) {
-      if (!rawData) return;
-      packetCount++;
-      const now = performance.now();
-      if (now - lastHzTime >= 1000) {
-        const fpsEl = document.getElementById('diag-fps');
-        if (fpsEl) fpsEl.textContent = `${packetCount} pacotes/s`;
-        packetCount = 0;
-        lastHzTime = now;
+    // Alternador de Viewport (Modo Celular vs Desktop Expandido)
+    function toggleViewportMode() {
+      state.viewport = state.viewport === 'desktop' ? 'mobile' : 'desktop';
+      localStorage.setItem('eva_viewport', state.viewport);
+      applyViewportMode(state.viewport);
+    }
+
+    function applyViewportMode(mode) {
+      const layout = document.getElementById('main-layout');
+      const centerCol = document.getElementById('desktop-center-column');
+      const rightCol = document.getElementById('desktop-right-column');
+      const viewIcon = document.getElementById('btn-view-icon');
+      const viewText = document.getElementById('btn-view-text');
+
+      if (mode === 'mobile') {
+        if (layout) {
+          layout.style.display = 'flex';
+          layout.style.justifyContent = 'center';
+        }
+        if (centerCol) centerCol.style.display = 'none';
+        if (rightCol) rightCol.style.display = 'none';
+        if (viewIcon) viewIcon.textContent = '🖥️';
+        if (viewText) viewText.textContent = 'Modo Desktop';
+      } else {
+        if (layout) {
+          layout.style.display = '';
+          layout.style.justifyContent = '';
+        }
+        if (centerCol) centerCol.style.display = '';
+        if (rightCol) rightCol.style.display = '';
+        if (viewIcon) viewIcon.textContent = '📱';
+        if (viewText) viewText.textContent = 'Modo Celular';
       }
+    }
 
-      let rawLevel = 0;
-      let rawRms = 0;
-      let rmsL = 0;
-      let rmsR = 0;
-      let nz = 0;
+    // Edição do Nome do Usuário
+    function editUserName() {
+      const current = state.userName;
+      const novo = prompt('Como a EVA deve te chamar?', current);
+      if (novo && novo.trim().length > 0) {
+        state.userName = novo.trim();
+        localStorage.setItem('eva_user_name', state.userName);
+        document.getElementById('greeting-username').textContent = state.userName;
+      }
+    }
 
-      if (typeof rawData === 'string' && rawData.startsWith('{')) {
+    // =========================================================================
+    // VISUALIZADOR EM CANVAS
+    // =========================================================================
+    let audioRms = 0;
+    function initVisualizer() {
+      const canvas = document.getElementById('visualizer-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let t = 0;
+
+      function draw() {
+        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const midY = h / 2;
+
+        const isDark = state.theme === 'night';
+        ctx.strokeStyle = isDark ? '#5C88BF' : '#72966A';
+        ctx.lineWidth = 2.5 * window.devicePixelRatio;
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        const amplitude = (state.isRecording || state.isSpeaking) ? Math.max(18, audioRms * 0.8) : 4;
+        const freq = (state.isRecording || state.isSpeaking) ? 0.03 : 0.015;
+
+        for (let x = 0; x < w; x += 3) {
+          const y = midY + Math.sin(x * freq + t) * amplitude * Math.sin(x / w * Math.PI);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        t += (state.isRecording || state.isSpeaking) ? 0.12 : 0.03;
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    }
+
+    // =========================================================================
+    // CONEXÃO COM O BACKEND & ESP32 VIA SERVER-SENT EVENTS (/api/serial/stream)
+    // =========================================================================
+    function connectSerialStream() {
+      const evtSource = new EventSource('/api/serial/stream');
+
+      evtSource.onmessage = (event) => {
         try {
-          const d = JSON.parse(rawData);
-          if (d.type === 'init' || d.type === 'hw_status') {
-            if (d.connected) {
-              state.esp32Connected = true;
-              hwBadge.className = 'badge-status connected';
-              hwBadgeText.textContent = 'ESP32 Online';
-              if (smPulseDot) smPulseDot.className = 'sm-pulse-dot online';
-              if (smPortTag) smPortTag.textContent = `COM7 · Stream Ativo (${d.ip || '192.168.100.87'})`;
-            }
-            return;
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'init' || data.type === 'hw_status') {
+            updateHardwareStatus(data.connected, data.ip);
           }
-          if (d.type === 'voice_status') {
-            if (d.state === 'processing') {
-              setOrbStatus('processando fala...', true, false);
-            }
-            return;
+
+          if (data.type === 'voice_status') {
+            const tagEl = document.getElementById('voice-state-tag');
+            if (tagEl) tagEl.textContent = data.message || 'Ativa';
           }
-          if (d.type === 'voice_interaction') {
-            if (d.userInputText) {
-              appendChatMessage('user', d.userInputText);
-            }
-            if (d.reply) {
-              const toolChips = [];
-              if (Array.isArray(d.toolExecutions)) {
-                d.toolExecutions.forEach(t => {
-                  const isCrit = t.toolName.includes('fechadura');
-                  let label = `Ação: ${t.toolName}`;
-                  if (t.toolName === 'consultar_clima') label = '🌤️ Clima consultado';
-                  else if (t.toolName === 'criar_lembrete') label = '⏰ Lembrete criado';
-                  else if (t.toolName === 'consultar_agenda') label = '📅 Agenda consultada';
-                  else if (t.toolName === 'buscar_na_web') label = '🔍 Pesquisa web realizada';
-                  else if (t.toolName === 'destrancar_fechadura') label = '🔒 Fechadura destrancada';
-                  else if (t.toolName.includes('dispositivo')) label = `💡 Dispositivo atualizado`;
-                  toolChips.push({ text: label, critical: isCrit });
-                });
-              }
-              appendChatMessage('eva', d.reply, toolChips);
-              speechBubble.textContent = d.reply;
-              speechBubble.style.display = 'block';
 
-              if (d.requiresConfirmation && d.pendingConfirmation) {
-                state.pendingAction = d.pendingConfirmation;
-                setOrbStatus('aguardando sua autorização...', false, false);
-                openSecurityModal(d.pendingConfirmation.prompt);
-              }
-
-              speakAudio(d.reply);
-            } else if (d.type === 'interrupt') {
-              console.log('[Barge-In] Sinal de interrupção recebido do servidor.');
-              interruptPlayback();
-              appendChatMessage('system', `⚡ Resposta anterior interrompida${d.newPrompt ? `: "${d.newPrompt}"` : ''}`);
-            }
-            return;
+          if (data.type === 'audio_sentence_chunk') {
+            playAudioSentenceChunk(data.data);
           }
-          rawLevel = parseFloat(d.level) || 0;
-          rawRms = parseFloat(d.rms) || 0;
-          rmsL = parseFloat(d.rmsL) || 0;
-          rmsR = parseFloat(d.rmsR) || 0;
-          nz = parseInt(d.nz, 10) || 0;
-        } catch(e) {}
-      } else if (typeof rawData === 'number') {
-        rawLevel = rawData;
-        rawRms = rawLevel * 35;
-      }
 
-      // Atualiza dados no diagnóstico
-      const rmsEl = document.getElementById('diag-rms');
-      const lvlEl = document.getElementById('diag-level');
-      if (rmsEl) rmsEl.textContent = rawRms.toFixed(1);
-      if (lvlEl) lvlEl.textContent = Math.round(rawLevel) + '%';
-
-      // Atualiza HUD do Monitor Serial
-      if (smHudRms) smHudRms.textContent = rawRms.toFixed(1);
-      if (smVuBarFill) smVuBarFill.style.width = Math.min(100, Math.max(0, rawLevel)) + '%';
-
-      // Canal ativo
-      if (smHudChan) {
-        if (rmsL >= rmsR && rmsL > 10) {
-          smHudChan.textContent = 'LEFT (GND)';
-        } else if (rmsR > rmsL && rmsR > 10) {
-          smHudChan.textContent = 'RIGHT (3.3V)';
-        } else {
-          smHudChan.textContent = 'AUTO';
-        }
-      }
-
-      // Classificação de Estado Acústico Calibrada
-      let stateLabel = 'Silêncio Ambiente';
-      let stateColor = 'var(--text-secondary)';
-      let badgeHtml = '';
-
-      if (rawRms >= 2400) {
-        stateLabel = '🔊 Som Alto / Palmas';
-        stateColor = 'var(--alert-coral)';
-        badgeHtml = '<span class="sm-badge-loud">PICO / PALMAS</span>';
-      } else if (rawRms >= 850) {
-        stateLabel = '🗣️ Voz Humana';
-        stateColor = '#E4EAE1';
-        badgeHtml = '<span class="sm-badge-voice">VOZ DETECTADA</span>';
-      } else if (rawRms >= 450) {
-        stateLabel = 'Ruído Leve';
-        stateColor = 'var(--sage-300)';
-      }
-
-      if (smHudState) {
-        smHudState.textContent = stateLabel;
-        smHudState.style.color = stateColor;
-      }
-
-      // Transmissão de Linhas no Monitor Serial (formato serial estilo Arduino)
-      const isSpike = (rawRms >= 850 && (now - lastVoiceSpikeTime > 500));
-      if (isSpike) lastVoiceSpikeTime = now;
-
-      if (now - lastTerminalLogTime > 320 || isSpike) {
-        lastTerminalLogTime = now;
-
-        const barLen = 14;
-        const filled = Math.min(barLen, Math.round((rawLevel / 100) * barLen));
-        const asciiBar = '[' + '█'.repeat(filled) + '░'.repeat(barLen - filled) + ']';
-
-        if (nz === 0 && rawRms < 1.0) {
-          appendSerialLog('MIC', '⚠️ SINAL ZERO (0.0). Verifique pinos SD/SCK/WS/VDD.', 'err');
-        } else {
-          const lStr = rmsL.toFixed(1).padStart(5, ' ');
-          const rStr = rmsR.toFixed(1).padStart(5, ' ');
-          const volStr = String(Math.round(rawLevel)).padStart(2, ' ') + '%';
-          const activeStr = rawRms.toFixed(1).padStart(5, ' ');
-          const logMsg = `RMS: <b>${activeStr}</b> (L:${lStr} | R:${rStr}) | Vol: ${volStr} <span class="sm-log-bar">${asciiBar}</span> ${stateLabel} ${badgeHtml}`;
-          appendSerialLog('MIC', logMsg, 'mic', true);
-        }
-      }
-
-      waveHistory.shift();
-      waveHistory.push(rawRms);
-
-      // Modulação de escala da bolinha caso o usuário esteja falando
-      if (!state.isSpeaking && !state.isThinking) {
-        if (rawRms >= 450) {
-          const scale = 1 + Math.min(0.40, ((rawRms - 450) / 700));
-          mainOrb.style.transform = `scale(${scale})`;
-          if (rawRms >= 850) {
-            setOrbStatus('ouvindo você...', false);
+          if (data.type === 'interrupt') {
+            showBargeInAlert(data.interruptedPrompt);
           }
-        } else {
-          mainOrb.style.transform = 'scale(1)';
-        }
-      }
-    }
 
-    // =========================================================================
-    // SERVIDOR-SENT EVENTS (SSE) BRIDGE — Streaming 100% à prova de falhas
-    // =========================================================================
-    let sseSource = null;
-    function initSseStream() {
-      if (sseSource) {
-        try { sseSource.close(); } catch(e) {}
-      }
-
-      try {
-        sseSource = new EventSource('/api/serial/stream');
-
-        sseSource.onopen = () => {
-          state.esp32Connected = true;
-          hwBadge.className = 'badge-status connected';
-          hwBadgeText.textContent = 'ESP32 Online';
-          if (smPulseDot) smPulseDot.className = 'sm-pulse-dot online';
-          if (smPortTag) smPortTag.textContent = 'COM7 · Stream SSE Ativo';
-        };
-
-        sseSource.onmessage = (event) => {
-          handleIncomingAudioPacket(event.data);
-        };
-
-        sseSource.onerror = () => {
-          // EventSource reconecta automaticamente no padrão do navegador
-        };
-      } catch (err) {
-        console.warn('Erro ao inicializar SSE Stream:', err);
-      }
-    }
-
-    function connectESP32() {
-      const ip = document.getElementById('esp-ip-input')?.value || '192.168.100.87';
-      if (ws) {
-        ws.onclose = null;
-        ws.close();
-      }
-
-      try {
-        ws = new WebSocket(`ws://${ip}/ws`);
-
-        ws.onopen = () => {
-          state.esp32Connected = true;
-          hwBadge.className = 'badge-status connected';
-          hwBadgeText.textContent = 'ESP32 Conectado';
-          if (smPulseDot) smPulseDot.className = 'sm-pulse-dot online';
-          if (smPortTag) smPortTag.textContent = `COM7 · ws://${ip}/ws (ONLINE)`;
-
-          appendSerialLog('BOOT', `ESP32-S3 QFN56 conectado via WebSocket em ws://${ip}/ws`, 'boot');
-          appendSerialLog('STREAM', 'Transmissão serial contínua ativa. Captação em tempo real...', 'ws');
-        };
-
-        ws.onclose = () => {
-          // Se cair, o SSE bridge garante o fluxo ininterrupto
-        };
-
-        ws.onerror = () => {};
-
-        ws.onmessage = (event) => {
-          handleIncomingAudioPacket(event.data);
-        };
-      } catch (err) {
-        console.warn('Erro ao conectar WebSocket do ESP32:', err);
-      }
-    }
-
-    function reconnectESP32() {
-      triggerHaptic(20);
-      initSseStream();
-      connectESP32();
-    }
-
-    // Desenho do Osciloscópio no Drawer de Diagnóstico
-    function drawWaveform() {
-      if (!diagCtx) return;
-      diagCtx.clearRect(0, 0, diagCanvas.width, diagCanvas.height);
-
-      diagCtx.strokeStyle = '#7A9A72';
-      diagCtx.lineWidth = 2;
-      diagCtx.beginPath();
-
-      const sliceWidth = diagCanvas.width / waveHistory.length;
-      let x = 0;
-
-      for (let i = 0; i < waveHistory.length; i++) {
-        const v = Math.min(1, waveHistory[i] / 100);
-        const y = diagCanvas.height - (v * (diagCanvas.height - 8)) - 4;
-
-        if (i === 0) diagCtx.moveTo(x, y);
-        else diagCtx.lineTo(x, y);
-
-        x += sliceWidth;
-      }
-
-      diagCtx.stroke();
-      requestAnimationFrame(drawWaveform);
-    }
-    requestAnimationFrame(drawWaveform);
-
-    function toggleDiagDrawer() {
-      triggerHaptic(15);
-      const drawer = document.getElementById('diag-drawer');
-      drawer.classList.toggle('open');
-    }
-
-    // =========================================================================
-    // CONTROLE DE ESTADOS DA BOLINHA & COMUNICAÇÃO DE VOZ
-    // =========================================================================
-    function setOrbStatus(text, thinking = false, speaking = false) {
-      statusText.innerHTML = `<span>${text}</span>`;
-      mainOrb.className = 'eva-orb';
-
-      if (thinking) {
-        mainOrb.classList.add('thinking');
-        state.isThinking = true;
-
-        // Feedback de latência (> 3s): previne sensação de travamento
-        if (state.lastLatencyTimeout) clearTimeout(state.lastLatencyTimeout);
-        state.lastLatencyTimeout = setTimeout(() => {
-          if (state.isThinking) {
-            mainOrb.classList.add('latency-notice');
-            statusText.innerHTML = `<span>processando com cuidado...</span>`;
+          if (data.type === 'voice_interaction') {
+            appendConversationTurn(data.userInputText, data.reply);
           }
-        }, 3200);
+        } catch (e) {}
+      };
+
+      evtSource.onerror = () => {
+        updateHardwareStatus(false);
+      };
+    }
+
+    function updateHardwareStatus(connected, ip = 'COM8') {
+      state.isEsp32Connected = connected;
+      const dot = document.getElementById('hw-dot');
+      const label = document.getElementById('hw-badge-label');
+      if (connected) {
+        if (dot) dot.className = 'hw-badge-dot';
+        if (label) label.textContent = `ESP32: Online (${ip})`;
       } else {
-        state.isThinking = false;
-        if (state.lastLatencyTimeout) clearTimeout(state.lastLatencyTimeout);
+        if (dot) dot.className = 'hw-badge-dot offline';
+        if (label) label.textContent = 'ESP32: COM8 Pronto';
       }
+    }
 
-      if (speaking) {
-        mainOrb.classList.add('speaking');
-        state.isSpeaking = true;
+    // Alerta de Interrupção de Fala (Barge-In)
+    function showBargeInAlert(prevPrompt) {
+      const banner = document.getElementById('barge-in-banner');
+      const bannerText = document.getElementById('barge-in-text');
+      if (banner && bannerText) {
+        bannerText.textContent = `⚡ Interrupção de fala! Interrompendo: "${prevPrompt || 'resposta anterior'}"`;
+        banner.classList.add('visible');
+        setTimeout(() => banner.classList.remove('visible'), 4000);
+      }
+      stopAudioPlayback();
+    }
+
+    // =========================================================================
+    // EXECUÇÃO DE VOZ E GRAVAÇÃO DE ÁUDIO NO NAVEGADOR
+    // =========================================================================
+    async function handleOrbClick() {
+      toggleVoiceRecording();
+    }
+
+    async function toggleVoiceRecording() {
+      if (state.isRecording) {
+        stopVoiceRecording();
       } else {
-        mainOrb.classList.remove('speaking');
-        state.isSpeaking = false;
+        startVoiceRecording();
       }
     }
 
-    // Variáveis de controle de áudio ativo para cancelamento instantâneo (Barge-In)
-    let currentActiveAudio = null;
-    let currentSpeakerHeartbeat = null;
-
-    function interruptPlayback() {
-      if (currentActiveAudio) {
-        try {
-          currentActiveAudio.pause();
-          currentActiveAudio.currentTime = 0;
-        } catch(e) {}
-        currentActiveAudio = null;
-      }
-      if (currentSpeakerHeartbeat) {
-        clearInterval(currentSpeakerHeartbeat);
-        currentSpeakerHeartbeat = null;
-      }
-      state.isSpeaking = false;
-      mainOrb.classList.remove('speaking');
-      setOrbStatus('ouvindo você...', false, false);
-      notifySpeakerState(false, 0);
-
-      // Notifica o backend sobre a interrupção manual
+    async function startVoiceRecording() {
       try {
-        fetch('/api/interrupt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'user_action' }),
-        }).catch(() => {});
-      } catch(e) {}
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.audioChunks = [];
+        state.mediaRecorder = new MediaRecorder(stream);
+
+        state.mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) state.audioChunks.push(e.data);
+        };
+
+        state.mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(state.audioChunks, { type: 'audio/wav' });
+          sendAudioToBackend(audioBlob);
+          stream.getTracks().forEach(t => t.stop());
+        };
+
+        state.mediaRecorder.start();
+        state.isRecording = true;
+        updateVoiceUI(true);
+      } catch (err) {
+        alert('Microfone não acessível: ' + err.message);
+      }
     }
 
-    // Envio de Mensagem para o Cérebro da EVA (/api/chat)
-    async function sendMessageToEVA(textPrompt, confirmed = false, pendingConfirmation = null) {
-      if (!textPrompt && !confirmed) return;
-
-      // Se a EVA estiver falando, interrompe a fala imediatamente (Barge-In)
-      if (state.isSpeaking || currentActiveAudio) {
-        console.log('[Barge-In] Interrompendo resposta anterior para nova pergunta...');
-        interruptPlayback();
+    function stopVoiceRecording() {
+      if (state.mediaRecorder && state.isRecording) {
+        state.mediaRecorder.stop();
+        state.isRecording = false;
+        updateVoiceUI(false);
       }
+    }
 
-      appendChatMessage('user', textPrompt);
-      setOrbStatus('pensando...', true, false);
+    function updateVoiceUI(recording) {
+      const orbTrigger = document.getElementById('orb-trigger');
+      const btnIcon = document.getElementById('btn-talk-icon');
+      const btnText = document.getElementById('btn-talk-text');
+      const tagEl = document.getElementById('voice-state-tag');
 
+      if (recording) {
+        if (orbTrigger) orbTrigger.classList.add('speaking');
+        if (btnIcon) btnIcon.textContent = '⏹️';
+        if (btnText) btnText.textContent = 'Ouvindo...';
+        if (tagEl) tagEl.textContent = 'Gravando áudio...';
+      } else {
+        if (orbTrigger) orbTrigger.classList.remove('speaking');
+        if (btnIcon) btnIcon.textContent = '🎙️';
+        if (btnText) btnText.textContent = 'Falar';
+        if (tagEl) tagEl.textContent = 'Processando com Whisper...';
+      }
+    }
+
+    async function sendAudioToBackend(blob) {
+      const t0 = performance.now();
       try {
-        const res = await fetch('/api/chat', {
+        const res = await fetch('/api/pipeline/voice', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: textPrompt,
-            history: state.conversationHistory.slice(-8),
-            confirmed,
-            pendingConfirmation,
-          }),
+          headers: { 'Content-Type': 'audio/wav' },
+          body: blob
         });
-
         const data = await res.json();
-        const reply = data.reply || 'Não consegui processar a resposta no momento.';
+        const tTotal = Math.round(performance.now() - t0);
+        document.getElementById('last-latency-total').textContent = `${tTotal} ms total`;
 
-        // Atualiza histórico em memória
-        state.conversationHistory.push({ role: 'user', content: textPrompt });
-        state.conversationHistory.push({ role: 'assistant', content: reply });
-
-        // Se o SafetyGate interceptou uma ação sensível
-        if (data.requiresConfirmation && data.pendingConfirmation) {
-          state.pendingAction = data.pendingConfirmation;
-          appendChatMessage('eva', reply, [
-            { text: `Ação Sensível: ${data.pendingConfirmation.toolName}`, critical: true }
-          ]);
-          setOrbStatus('aguardando sua autorização...', false, false);
-          openSecurityModal(data.pendingConfirmation.prompt);
-          await speakAudio(reply);
-          return;
+        if (data.reply) {
+          appendConversationTurn(data.userInputText, data.reply);
         }
-
-        // Mapeia chips de ferramentas executadas
-        const toolChips = [];
-        if (Array.isArray(data.toolExecutions)) {
-          data.toolExecutions.forEach(t => {
-            const isCrit = t.toolName.includes('fechadura');
-            let label = `Ação: ${t.toolName}`;
-            if (t.toolName === 'consultar_clima') label = '🌤️ Clima consultado';
-            else if (t.toolName === 'criar_lembrete') label = '⏰ Lembrete criado';
-            else if (t.toolName === 'consultar_agenda') label = '📅 Agenda consultada';
-            else if (t.toolName === 'buscar_na_web') label = '🔍 Pesquisa web realizada';
-            else if (t.toolName === 'destrancar_fechadura') label = '🔒 Fechadura destrancada';
-            else if (t.toolName.includes('dispositivo')) label = `💡 Dispositivo atualizado`;
-
-            toolChips.push({ text: label, critical: isCrit });
-          });
+        if (data.telemetry) {
+          updateTelemetryBars(data.telemetry);
         }
-
-        appendChatMessage('eva', reply, toolChips);
-        speechBubble.textContent = reply;
-        speechBubble.style.display = 'block';
-
-        // Sintetiza resposta por voz
-        await speakAudio(reply);
-
       } catch (err) {
-        console.error('Erro na conversa:', err);
-        setOrbStatus('tudo tranquilo por aqui', false, false);
-        appendChatMessage('eva', 'Ocorreu uma instabilidade na conexão com o servidor da EVA.');
+        console.error('Erro no envio de voz:', err);
+      } finally {
+        const tagEl = document.getElementById('voice-state-tag');
+        if (tagEl) tagEl.textContent = 'Pronta para ouvir';
       }
     }
 
-    // Notifica o backend e o hardware sobre o estado dos alto-falantes (Cancelamento de Eco)
-    function notifySpeakerState(speaking, durationMs) {
-      try {
-        fetch('/api/speaker/state', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ speaking, durationMs }),
-        }).catch(() => {});
-      } catch(e) {}
-    }
-
-    // Síntese de Voz (/api/tts) com Proteção Ativa Contra Loop de Eco Acústico (AEC)
-    async function speakAudio(text) {
-      if (!text || !text.trim()) return;
-
-      // Se houver algum áudio antigo tocando, cancela antes de iniciar o novo
-      if (currentActiveAudio) {
-        try {
-          currentActiveAudio.pause();
-          currentActiveAudio.currentTime = 0;
-        } catch(e) {}
-        currentActiveAudio = null;
-      }
-      if (currentSpeakerHeartbeat) {
-        clearInterval(currentSpeakerHeartbeat);
-        currentSpeakerHeartbeat = null;
-      }
-
-      return new Promise((resolve) => {
-        setOrbStatus('falando...', false, true);
-
-        // Estima a duração da fala (~65ms por caractere + margem de segurança de 2s)
-        const estDuration = Math.max(4500, Math.round(text.length * 65 + 2000));
-        notifySpeakerState(true, estDuration);
-
-        // Heartbeat de proteção: a cada 900ms renova o silenciamento enquanto fala
-        currentSpeakerHeartbeat = setInterval(() => {
-          notifySpeakerState(true, 3000);
-        }, 900);
-
-        const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
-        currentActiveAudio = audio;
-
-        let finished = false;
-        const finishPlayback = () => {
-          if (finished) return;
-          finished = true;
-          if (currentSpeakerHeartbeat) {
-            clearInterval(currentSpeakerHeartbeat);
-            currentSpeakerHeartbeat = null;
-          }
-          currentActiveAudio = null;
-
-          // Grace period de 1.2s pós-fala para que reverbações do cômodo cessem
-          notifySpeakerState(true, 1200);
-          setTimeout(() => {
-            if (!currentActiveAudio) {
-              setOrbStatus('tudo tranquilo por aqui', false, false);
-              notifySpeakerState(false, 0);
-            }
-            resolve();
-          }, 1200);
-        };
-
-        audio.onended = finishPlayback;
-        audio.onerror = finishPlayback;
-
-        audio.play().catch(e => {
-          console.warn('[Audio Playback]', e);
-          finishPlayback();
-        });
-      });
-    }
-
-    function appendChatMessage(role, text, toolChips = []) {
-      const bubble = document.createElement('div');
-      bubble.className = `chat-bubble ${role}`;
-      bubble.textContent = text;
-
-      if (toolChips.length > 0) {
-        const chipsContainer = document.createElement('div');
-        chipsContainer.style.display = 'flex';
-        chipsContainer.style.flexWrap = 'wrap';
-        chipsContainer.style.gap = '6px';
-
-        toolChips.forEach(chip => {
-          const c = document.createElement('div');
-          c.className = `tool-chip ${chip.critical ? 'critical' : ''}`;
-          c.textContent = chip.text;
-          chipsContainer.appendChild(c);
-        });
-
-        bubble.appendChild(chipsContainer);
-      }
-
-      chatTimeline.appendChild(bubble);
-      chatTimeline.scrollTop = chatTimeline.scrollHeight;
-
-      const chatCount = document.getElementById('chat-count');
-      if (chatCount) {
-        chatCount.textContent = `${chatTimeline.children.length} interações`;
-      }
-    }
-
-    function sendTextMessage() {
-      const val = chatTextInput.value.trim();
-      if (!val) return;
-      chatTextInput.value = '';
-      sendMessageToEVA(val);
-    }
-
+    // Envio de texto / comandos rápidos
     function handleInputKey(e) {
-      if (e.key === 'Enter') sendTextMessage();
+      if (e.key === 'Enter') {
+        const input = document.getElementById('chat-input');
+        if (input && input.value.trim()) {
+          sendTextMessage(input.value.trim());
+          input.value = '';
+        }
+      }
     }
 
-    function askQuickPrompt(promptText) {
-      triggerHaptic(15);
-      switchTab('home');
-      sendMessageToEVA(promptText);
+    function sendQuickMessage(text) {
+      sendTextMessage(text);
     }
 
-    function clearChatHistory() {
-      triggerHaptic(20);
-      state.conversationHistory = [];
-      chatTimeline.innerHTML = '';
-      const chatCount = document.getElementById('chat-count');
-      if (chatCount) chatCount.textContent = '0 interações';
-      speechBubble.style.display = 'none';
-      setOrbStatus('tudo tranquilo por aqui', false, false);
-    }
-
-    // =========================================================================
-    // GESTÃO DE DISPOSITIVOS & AUTOMAÇÕES
-    // =========================================================================
-    function toggleDevice(devKey, forcedState = null) {
-      triggerHaptic(15);
-      const newState = forcedState !== null ? forcedState : !state.devices[devKey];
-      state.devices[devKey] = newState;
-
-      const card = document.getElementById(`dev-${devKey}`);
-      const check = document.getElementById(`check-dev-${devKey}`);
-      const stateLbl = document.getElementById(`state-dev-${devKey}`);
-
-      if (card) card.classList.toggle('active', newState);
-      if (check) check.checked = newState;
-      if (stateLbl) stateLbl.textContent = newState ? 'Ligado' : 'Desligado';
-
-      // Atualiza sumário na Home
-      updateActiveDevicesSummary();
-
-      // Comunica ao backend como comando silencioso de automação
-      const actionName = newState ? 'Ligue' : 'Desligue';
-      const devName = devKey === 'light' ? 'a luz da sala' : devKey === 'ac' ? 'o ar-condicionado' : 'o ventilador';
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `${actionName} ${devName}` }),
-      }).catch(() => {});
-    }
-
-    function triggerDoorLockAction() {
-      triggerHaptic(25);
-      openSecurityModal("Você confirma que deseja destrancar a fechadura da porta principal?");
-    }
-
-    function updateActiveDevicesSummary() {
-      const activeCount = Object.values(state.devices).filter(Boolean).length;
-      const countEl = document.getElementById('active-devices-count');
-      const sumEl = document.getElementById('active-devices-summary');
-
-      if (countEl) countEl.textContent = `${activeCount} ativo${activeCount > 1 ? 's' : ''}`;
-      if (sumEl) sumEl.textContent = state.devices.light ? 'Luz da sala ligada' : 'Nenhum dispositivo ligado';
-    }
-
-    function toggleRoutine(routineKey, isActive) {
-      triggerHaptic(15);
-      // Rotina ativada/desativada com feedback tátil
-    }
-
-    // =========================================================================
-    // MODAL DE AUTORIZAÇÃO CRÍTICA (HUMAN-IN-THE-LOOP)
-    // =========================================================================
-    function openSecurityModal(promptText) {
-      triggerHaptic(30);
-      document.getElementById('modal-desc').textContent = promptText;
-      securityModal.classList.add('active');
-    }
-
-    function closeSecurityModal() {
-      triggerHaptic(10);
-      securityModal.classList.remove('active');
-      state.pendingAction = null;
-    }
-
-    async function confirmSecurityAction() {
-      triggerHaptic(40);
-      securityModal.classList.remove('active');
-
-      const action = state.pendingAction || {
-        toolName: 'destrancar_fechadura',
-        parameters: { porta: 'principal' },
-      };
-
-      state.pendingAction = null;
-
-      // Executa a confirmação no backend
-      setOrbStatus('executando ação autorizada...', true, false);
-
+    async function sendTextMessage(text) {
+      appendConversationTurn(text, '...');
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            confirmed: true,
-            pendingConfirmation: action,
-          }),
+          body: JSON.stringify({ message: text })
         });
-
         const data = await res.json();
-        const reply = data.reply || 'Ação autorizada com sucesso.';
-
-        // Atualiza estado do dispositivo visualmente
-        state.devices.lock = true;
-        const lockCard = document.getElementById('dev-lock');
-        const lockState = document.getElementById('state-dev-lock');
-        if (lockCard) lockCard.classList.add('active');
-        if (lockState) {
-          lockState.textContent = 'Destrancada';
-          lockState.style.color = 'var(--sage-300)';
+        if (data.reply) {
+          appendConversationTurn(text, data.reply);
+          // Síntese de voz
+          playTtsForText(data.reply);
         }
-
-        appendChatMessage('eva', reply, [
-          { text: '🔒 Fechadura destrancada com autorização', critical: false }
-        ]);
-
-        await speakAudio(reply);
-
       } catch (err) {
-        console.error('Erro na confirmação:', err);
+        console.error(err);
+      }
+    }
+
+    async function playTtsForText(text) {
+      try {
+        const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
+        const blob = await res.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        state.isSpeaking = true;
+        document.getElementById('orb-trigger')?.classList.add('speaking');
+        audio.onended = () => {
+          state.isSpeaking = false;
+          document.getElementById('orb-trigger')?.classList.remove('speaking');
+        };
+        audio.play();
+      } catch (e) {}
+    }
+
+    function appendConversationTurn(userText, replyText) {
+      const box = document.getElementById('speech-transcript-box');
+      const placeholder = document.getElementById('transcript-placeholder');
+      const content = document.getElementById('transcript-content');
+      if (placeholder) placeholder.style.display = 'none';
+
+      if (content) {
+        const item = document.createElement('div');
+        item.style.marginBottom = '12px';
+        item.innerHTML = `
+          <div style="font-size: 13px; font-weight: 700; color: var(--accent-sage);">Você:</div>
+          <div style="margin-bottom: 6px;">${userText || '(áudio)'}</div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); font-family: var(--font-serif);">EVA:</div>
+          <div>${replyText}</div>
+        `;
+        content.appendChild(item);
+        box.scrollTop = box.scrollHeight;
+      }
+    }
+
+    function updateTelemetryBars(tel) {
+      if (tel.vadCutoffElapsedMs != null) document.getElementById('lat-t0').textContent = `${tel.vadCutoffElapsedMs} ms`;
+      if (tel.sttDurationMs != null) document.getElementById('lat-t2').textContent = `${tel.sttDurationMs} ms`;
+      if (tel.llmFirstTokenMs != null) document.getElementById('lat-t3').textContent = `${tel.llmFirstTokenMs} ms`;
+      if (tel.ttsDurationMs != null) document.getElementById('lat-t6').textContent = `${tel.ttsDurationMs} ms`;
+    }
+
+    // =========================================================================
+    // CASA INTELIGENTE & CONTROLE DE DISPOSITIVOS
+    // =========================================================================
+    function toggleDevice(devKey) {
+      state.devices[devKey] = !state.devices[devKey];
+      const isNowOn = state.devices[devKey];
+
+      // Mapeamento visual
+      if (devKey === 'light') {
+        document.getElementById('tile-luz-sala').classList.toggle('on', isNowOn);
+        logBtCommand(isNowOn ? 'LIGAR_DISPOSITIVO:sala:luz' : 'DESLIGAR_DISPOSITIVO:sala:luz');
+      } else if (devKey === 'ac') {
+        document.getElementById('tile-ar-quarto').classList.toggle('on', isNowOn);
+        logBtCommand(isNowOn ? 'LIGAR_DISPOSITIVO:quarto:ar-condicionado' : 'DESLIGAR_DISPOSITIVO:quarto:ar-condicionado');
+      } else if (devKey === 'fan') {
+        document.getElementById('tile-ventilador').classList.toggle('on', isNowOn);
+        logBtCommand(isNowOn ? 'LIGAR_DISPOSITIVO:sala:ventilador' : 'DESLIGAR_DISPOSITIVO:sala:ventilador');
+      } else if (devKey === 'lock') {
+        document.getElementById('tile-fechadura').classList.toggle('on', isNowOn);
+        document.getElementById('lock-sub-label').textContent = isNowOn ? 'Destrancada' : 'Trancada';
+        logBtCommand(isNowOn ? 'DESTRANCAR_FECHADURA:porta-principal' : 'TRANCAR_FECHADURA:porta-principal');
+      }
+    }
+
+    function logBtCommand(cmd) {
+      const consoleEl = document.getElementById('bt-console');
+      if (consoleEl) {
+        const time = new Date().toLocaleTimeString();
+        const row = document.createElement('div');
+        row.textContent = `[BT ${time}] 📤 CMD:${cmd}`;
+        consoleEl.appendChild(row);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
       }
     }
 
     // =========================================================================
-    // PUSH-TO-TALK (SEGURAR PARA FALAR MANUAL)
+    // MODAL DE MÓDULOS (SAÚDE, CASA INTELIGENTE, ROTINAS)
     // =========================================================================
-    let recognition = null;
-    let isHolding = false;
+    function openModuleModal(type) {
+      const modal = document.getElementById('module-modal');
+      const title = document.getElementById('modal-title');
+      const body = document.getElementById('modal-body-content');
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.lang = 'pt-BR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      if (type === 'saude') {
+        title.textContent = 'Cuidados & Bem-Estar';
+        body.innerHTML = `
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 14px;">Monitoramento de hábitos diários e lembretes de saúde coordenados pela EVA.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: var(--bg-card); padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>💧 Meta de Hidratação</span>
+              <strong style="color: var(--accent-sage);">1.8L / 2.5L</strong>
+            </div>
+            <div style="background: var(--bg-card); padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>💊 Vitaminas & Medicamentos</span>
+              <span>12:30 (Em dia)</span>
+            </div>
+            <div style="background: var(--bg-card); padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>😴 Sono & Descanso</span>
+              <span>7h 45m registrado</span>
+            </div>
+          </div>
+        `;
+      } else if (type === 'dispositivos') {
+        title.textContent = 'Casa Inteligente & Bluetooth';
+        body.innerHTML = `
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 14px;">Controle de dispositivos integrados diretamente pelo hardware ESP32 via Bluetooth Classic (SPP).</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="chip-btn" style="padding: 10px;" onclick="toggleDevice('light')">💡 Alternar Luz da Sala</button>
+            <button class="chip-btn" style="padding: 10px;" onclick="toggleDevice('ac')">❄️ Alternar Ar Condicionado</button>
+            <button class="chip-btn" style="padding: 10px;" onclick="toggleDevice('lock')">🔒 Alternar Fechadura da Porta</button>
+          </div>
+        `;
+      } else if (type === 'rotinas') {
+        title.textContent = 'Rotinas & Automações';
+        body.innerHTML = `
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 14px;">Cenas configuradas na EVA para executar múltiplos comandos via voz ou horário.</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Bom Dia')">☀️ <strong>Rotina Bom Dia</strong> — Previsão, luzes 100% e agenda</button>
+            <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Cinema')">🎬 <strong>Modo Cinema</strong> — Luzes suaves e mudo no speaker</button>
+            <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Boa Noite')">🌙 <strong>Rotina Boa Noite</strong> — Tranca portas e apaga luzes</button>
+          </div>
+        `;
+      }
 
-      recognition.onresult = (event) => {
-        const speechText = event.results[0][0].transcript;
-        if (speechText) {
-          sendMessageToEVA(speechText);
-        }
-      };
-
-      recognition.onerror = () => {
-        setOrbStatus('tudo tranquilo por aqui', false, false);
-      };
-
-      recognition.onend = () => {
-        if (!state.isThinking && !state.isSpeaking) {
-          setOrbStatus('tudo tranquilo por aqui', false, false);
-        }
-      };
+      modal.classList.add('open');
     }
 
-    btnHoldTalk.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      triggerHaptic(20);
-      interruptPlayback();
-      isHolding = true;
-      btnHoldTalk.classList.add('pressed');
-      setOrbStatus('ouvindo você...', false, false);
-
-      if (recognition) {
-        try { recognition.start(); } catch(e) {}
-      }
-    });
-
-    const releaseHold = (e) => {
-      if (!isHolding) return;
-      isHolding = false;
-      btnHoldTalk.classList.remove('pressed');
-
-      if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-      }
-    };
-
-    btnHoldTalk.addEventListener('pointerup', releaseHold);
-    btnHoldTalk.addEventListener('pointercancel', releaseHold);
-    btnHoldTalk.addEventListener('mouseleave', releaseHold);
-
-    // Toque direto na bolinha principal ativa fala
-    mainOrb.addEventListener('click', () => {
-      triggerHaptic(15);
-      interruptPlayback();
-      setOrbStatus('ouvindo você...', false, false);
-      if (recognition) {
-        try { recognition.start(); } catch(e) {}
-      }
-    });
-
-    // =========================================================================
-    // CONFIGURAÇÕES & EXPORTAÇÃO DE DADOS
-    // =========================================================================
-    function toggleTheme(isDark) {
-      triggerHaptic(10);
-      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    function closeModuleModal() {
+      document.getElementById('module-modal')?.classList.remove('open');
     }
 
-    function toggleDemoMode(isDemo) {
-      triggerHaptic(15);
-      if (isDemo) {
-        document.getElementById('eva-unit-name').textContent = 'EVA Unidade Demo';
-        document.getElementById('eva-unit-ip').textContent = 'Ambiente Fictício Seguro';
-      } else {
-        document.getElementById('eva-unit-name').textContent = 'EVA Sala de Estar';
-        document.getElementById('eva-unit-ip').textContent = 'ESP32-S3 · 192.168.100.87';
+    function selectNavTab(tab) {
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
+
+      if (tab === 'atividade') {
+        openModuleModal('rotinas');
+      } else if (tab === 'config') {
+        editUserName();
       }
     }
 
-    function exportDataArchive() {
-      triggerHaptic(20);
-      const exportObject = {
-        app: 'EVA Voice Assistant',
-        version: '0.1.0',
-        exportedAt: new Date().toISOString(),
-        privacyPolicy: 'Zero-Audio-Retention',
-        conversationCount: state.conversationHistory.length,
-        devices: state.devices,
-        history: state.conversationHistory,
-      };
-
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObject, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute('href', dataStr);
-      downloadAnchor.setAttribute('download', `eva_dados_export_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    // Inicialização ao carregar
-    window.addEventListener('DOMContentLoaded', () => {
-      appendSerialLog('SYS', 'Monitor Serial Inicializado — Carregando telemetria...', 'boot');
-      appendSerialLog('HW', 'ESP32-S3 QFN56 (8MB Octal PSRAM) detectado via USB COM7 / Wi-Fi.', 'boot');
-      initSseStream();
-      connectESP32();
-      updateActiveDevicesSummary();
-    });
+    // Inicialização ao carregar a página
+    window.addEventListener('DOMContentLoaded', initThemeAndClock);
   </script>
 </body>
 </html>
