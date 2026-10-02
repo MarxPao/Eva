@@ -334,6 +334,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      transition: transform 0.08s ease-out;
     }
 
     .orb-bevel-rim {
@@ -348,7 +349,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .orb-bevel-rim:active {
@@ -365,11 +366,25 @@
                   0 8px 24px var(--orb-glow);
       position: relative;
       animation: orbBreathe 4s ease-in-out infinite;
+      transition: filter 0.15s ease;
     }
 
     @keyframes orbBreathe {
       0%, 100% { transform: scale(1); filter: brightness(1); }
       50% { transform: scale(1.025); filter: brightness(1.05); }
+    }
+
+    .orb-wrapper.thinking .orb-sphere-3d {
+      animation: orbThink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes orbThink {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.05); filter: brightness(1.22) drop-shadow(0 0 16px var(--orb-glow)); }
+    }
+
+    .orb-wrapper.listening .orb-sphere-3d {
+      filter: brightness(1.18) drop-shadow(0 0 18px var(--orb-glow));
     }
 
     .orb-pulse-wave {
@@ -382,13 +397,14 @@
       pointer-events: none;
     }
 
+    .orb-wrapper.listening .orb-pulse-wave,
     .orb-wrapper.speaking .orb-pulse-wave {
-      animation: ripple 1.8s ease-out infinite;
+      animation: ripple 1.3s ease-out infinite;
     }
 
     @keyframes ripple {
-      0% { transform: scale(1); opacity: 0.8; }
-      100% { transform: scale(1.45); opacity: 0; }
+      0% { transform: scale(1); opacity: 0.85; }
+      100% { transform: scale(1.5); opacity: 0; }
     }
 
     /* SAUDAÇÃO EDITORIAL */
@@ -1742,25 +1758,25 @@
     function handleIncomingAudioPacket(rawData) {
       if (!rawData) return;
       try {
-        let parsed = null;
-        if (typeof rawData === 'string' && rawData.startsWith('{')) {
-          parsed = JSON.parse(rawData);
-        }
+        let parsed = (typeof rawData === 'string' && rawData.startsWith('{'))
+          ? JSON.parse(rawData)
+          : (typeof rawData === 'object' ? rawData : null);
 
         if (parsed) {
           const rawRms = Number(parsed.rms || 0);
           const rawLevel = Number(parsed.level || 0);
-          const rmsL = Number(parsed.rmsL || rawRms);
-          const rmsR = Number(parsed.rmsR || rawRms);
+          const rmsL = Number(parsed.rmsL || 0);
+          const rmsR = Number(parsed.rmsR || 0);
+          const st = parsed.st || 'idle';
 
           audioRms = rawRms;
 
-          // Atualiza HUD
+          // Atualiza HUD do Monitor Serial
           if (smHudRms) smHudRms.textContent = rawRms.toFixed(1);
-          if (smVuBarFill) smVuBarFill.style.width = `${Math.min(100, rawLevel)}%`;
+          if (smVuBarFill) smVuBarFill.style.width = `${Math.min(100, Math.max(0, rawLevel))}%`;
 
           let stateLabel = 'Silêncio';
-          if (rawRms >= 1150) {
+          if (st === 'rec' || rawRms >= 1150) {
             stateLabel = '🎙️ Fala Detectada!';
             if (smHudState) smHudState.style.color = '#D7C7A3';
           } else if (rawRms >= 620) {
@@ -1771,15 +1787,60 @@
           }
           if (smHudState) smHudState.textContent = stateLabel;
 
-          // Barra ASCII
+          // Barra ASCII no terminal serial
           const barLen = 12;
           const filled = Math.min(barLen, Math.round((rawLevel / 100) * barLen));
           const asciiBar = '[' + '█'.repeat(filled) + '░'.repeat(barLen - filled) + ']';
 
           const logMsg = `RMS: <b>${rawRms.toFixed(1)}</b> (L:${rmsL.toFixed(1)} | R:${rmsR.toFixed(1)}) | Vol: ${rawLevel}% <span class="sm-log-bar">${asciiBar}</span> ${stateLabel}`;
           appendSerialLog('MIC', logMsg, 'mic', true);
+
+          // Dinâmica da Esfera 3D (A Bolinha) em tempo real via microfone ESP32
+          updateOrbAudioReactivity(rawRms, rawLevel, st);
         }
       } catch (e) {}
+    }
+
+    function updateOrbAudioReactivity(rms, level, st) {
+      const orbEl = document.getElementById('orb-trigger');
+      const tagEl = document.getElementById('voice-state-tag');
+      if (!orbEl) return;
+
+      if (state.isSpeaking) {
+        orbEl.classList.add('speaking');
+        orbEl.classList.remove('listening', 'thinking');
+        return;
+      }
+
+      if (state.isProcessing) {
+        orbEl.classList.add('thinking');
+        orbEl.classList.remove('listening', 'speaking');
+        return;
+      }
+
+      if (st === 'rec' || rms >= 1150) {
+        orbEl.classList.add('listening');
+        orbEl.classList.remove('speaking', 'thinking');
+        const dynScale = 1.05 + Math.min(0.25, (rms - 600) / 2400);
+        orbEl.style.transform = `scale(${dynScale.toFixed(3)})`;
+        if (tagEl && (!tagEl.textContent.includes('falando') && !tagEl.textContent.includes('Transcrevendo'))) {
+          tagEl.textContent = '🎙️ Ouvindo você (ESP32)...';
+          tagEl.style.color = 'var(--text-primary)';
+          tagEl.style.borderColor = 'var(--accent-sage)';
+        }
+      } else if (rms >= 620) {
+        const dynScale = 1.0 + Math.min(0.08, (rms - 500) / 3500);
+        orbEl.style.transform = `scale(${dynScale.toFixed(3)})`;
+        orbEl.classList.remove('speaking', 'thinking');
+      } else {
+        orbEl.style.transform = 'scale(1)';
+        orbEl.classList.remove('listening');
+        if (tagEl && tagEl.textContent.includes('Ouvindo você (ESP32)')) {
+          tagEl.textContent = 'Pronta para ouvir';
+          tagEl.style.color = '';
+          tagEl.style.borderColor = '';
+        }
+      }
     }
 
     // Inicialização do Tema e Relógio
@@ -1799,7 +1860,6 @@
       setInterval(updateClock, 1000);
       initVisualizer();
       connectSerialStream();
-      connectEspWebSocket();
 
       appendSerialLog('SYS', 'Monitor Serial Inicializado — Carregando telemetria...', 'sys');
       appendSerialLog('HW', `ESP32 Clássico detectado na porta COM8 · IP: ${state.espIp}`, 'sys');
@@ -1950,8 +2010,15 @@
         ctx.lineCap = 'round';
 
         ctx.beginPath();
-        const amplitude = (state.isRecording || state.isSpeaking) ? Math.max(18, audioRms * 0.8) : 4;
-        const freq = (state.isRecording || state.isSpeaking) ? 0.03 : 0.015;
+        // Áudio RMS do ESP32 varia de ~400 a 2500+
+        const hasSound = (state.isRecording || state.isSpeaking || audioRms > 620);
+        let amplitude = 4;
+        if (state.isSpeaking) {
+          amplitude = 22;
+        } else if (audioRms > 620) {
+          amplitude = Math.min(36, Math.max(6, (audioRms - 500) / 35));
+        }
+        const freq = hasSound ? 0.035 : 0.015;
 
         for (let x = 0; x < w; x += 3) {
           const y = midY + Math.sin(x * freq + t) * amplitude * Math.sin(x / w * Math.PI);
@@ -1960,90 +2027,91 @@
         }
         ctx.stroke();
 
-        t += (state.isRecording || state.isSpeaking) ? 0.12 : 0.03;
+        t += hasSound ? 0.14 : 0.03;
         requestAnimationFrame(draw);
       }
       requestAnimationFrame(draw);
     }
 
     // =========================================================================
-    // CONEXÃO COM O BACKEND & ESP32 VIA WEBSOCKET E SSE
+    // CONEXÃO COM O BACKEND VIA SERVER-SENT EVENTS (SSE) & ESP32 BRIDGE
     // =========================================================================
-    let espWs = null;
-    function connectEspWebSocket() {
-      if (espWs) {
-        try { espWs.close(); } catch(e) {}
-      }
-
-      try {
-        const url = `ws://${state.espIp}/ws`;
-        espWs = new WebSocket(url);
-
-        espWs.onopen = () => {
-          updateHardwareStatus(true, state.espIp);
-          appendSerialLog('WS', `Conectado diretamente ao ESP32 em ${url}`, 'sys');
-        };
-
-        espWs.onmessage = (event) => {
-          if (typeof event.data === 'string') {
-            handleIncomingAudioPacket(event.data);
-          }
-        };
-
-        espWs.onclose = () => {
-          updateHardwareStatus(false);
-          // Reconecta em 4 segundos
-          setTimeout(connectEspWebSocket, 4000);
-        };
-
-        espWs.onerror = () => {};
-      } catch (err) {
-        console.warn('Erro WS ESP32:', err);
-      }
-    }
+    let evtSource = null;
 
     function reconnectESP32() {
-      appendSerialLog('SYS', 'Reconectando WebSocket e SSE ao ESP32...', 'sys');
-      connectEspWebSocket();
+      appendSerialLog('SYS', 'Reconectando monitor ao backend...', 'sys');
       connectSerialStream();
     }
 
     function connectSerialStream() {
-      const evtSource = new EventSource('/api/serial/stream');
+      if (evtSource) {
+        try { evtSource.close(); } catch(e) {}
+      }
+
+      evtSource = new EventSource('/api/serial/stream');
+
+      evtSource.onopen = () => {
+        appendSerialLog('SYS', 'Canal SSE (/api/serial/stream) conectado com sucesso.', 'sys');
+      };
 
       evtSource.onmessage = (event) => {
         try {
+          if (!event.data) return;
           const data = JSON.parse(event.data);
-          
+
+          // 1. Pacote de telemetria de áudio bruto do ESP32 (RMS, Level, st)
+          if (data.rms !== undefined || data.level !== undefined) {
+            handleIncomingAudioPacket(data);
+            return;
+          }
+
+          // 2. Status de Hardware
           if (data.type === 'init' || data.type === 'hw_status') {
-            updateHardwareStatus(data.connected, data.ip);
+            if (typeof data.connected === 'boolean') {
+              updateHardwareStatus(data.connected, data.ip);
+            }
+            if (data.state) {
+              handleVoiceStateChange(data.state);
+            }
+            return;
           }
 
+          // 3. Status de Voz do Pipeline
           if (data.type === 'voice_status') {
-            const tagEl = document.getElementById('voice-state-tag');
-            if (tagEl) tagEl.textContent = data.message || 'Ativa';
-            appendSerialLog('VAD', data.message || 'Status alterado', 'vad');
+            handleVoiceStateChange(data.state, data.message);
+            return;
           }
 
+          // 4. Áudio sintetizado em chunks
           if (data.type === 'audio_sentence_chunk') {
-            playAudioSentenceChunk(data.data);
+            enqueueAudioChunk(data.data);
+            return;
           }
 
+          // 5. Interrupção de fala (Barge-In)
           if (data.type === 'interrupt') {
+            interruptPlayback();
             showBargeInAlert(data.interruptedPrompt);
             appendSerialLog('VAD', `⚡ Interrupção de fala (Barge-In) acionada!`, 'err');
+            return;
           }
 
+          // 6. Turno conversacional concluído
           if (data.type === 'voice_interaction') {
             appendConversationTurn(data.userInputText, data.reply);
             appendSerialLog('STT', `Fala transcrita: "${data.userInputText}"`, 'vad');
             appendSerialLog('LLM', `Resposta da EVA: "${data.reply}"`, 'sys');
+            if (data.telemetry) updateTelemetryBars(data.telemetry);
+            playVoiceResponse(data.reply);
+            return;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[SSE Parse Error]', e);
+        }
       };
 
       evtSource.onerror = () => {
-        updateHardwareStatus(false);
+        // SSE reconecta automaticamente no navegador
       };
     }
 
@@ -2063,10 +2131,202 @@
         if (pulseDot) pulseDot.className = 'sm-pulse-dot online';
       } else {
         if (dot) dot.className = 'hw-badge-dot offline';
-        if (label) label.textContent = 'ESP32: COM8 Pronto';
+        if (label) label.textContent = 'ESP32: Offline';
         if (cfgTag) cfgTag.textContent = 'ESP32: Desconectado';
         if (portTag) portTag.textContent = `COM8 · ws://${ip}/ws (DESCONECTADO)`;
         if (pulseDot) pulseDot.className = 'sm-pulse-dot offline';
+      }
+    }
+
+    function handleVoiceStateChange(stateName, message) {
+      const orbEl = document.getElementById('orb-trigger');
+      const tagEl = document.getElementById('voice-state-tag');
+
+      if (stateName === 'recording') {
+        state.isRecording = true;
+        state.isProcessing = false;
+        if (orbEl) {
+          orbEl.classList.add('listening');
+          orbEl.classList.remove('speaking', 'thinking');
+        }
+        if (tagEl) {
+          tagEl.textContent = message || '🎙️ Ouvindo você (ESP32)...';
+          tagEl.style.color = 'var(--text-primary)';
+          tagEl.style.borderColor = 'var(--accent-sage)';
+        }
+        appendSerialLog('VAD', message || 'Gravação iniciada no microfone ESP32', 'vad');
+      } else if (stateName === 'processing') {
+        state.isRecording = false;
+        state.isProcessing = true;
+        if (orbEl) {
+          orbEl.classList.add('thinking');
+          orbEl.classList.remove('listening', 'speaking');
+          orbEl.style.transform = 'scale(1)';
+        }
+        if (tagEl) {
+          tagEl.textContent = message || 'Transcrevendo áudio (Whisper)...';
+          tagEl.style.color = 'var(--accent-sage)';
+        }
+        appendSerialLog('VAD', message || 'Processando com Whisper STT', 'vad');
+      } else if (stateName === 'idle') {
+        state.isRecording = false;
+        state.isProcessing = false;
+        if (!state.isSpeaking) {
+          if (orbEl) {
+            orbEl.classList.remove('listening', 'thinking', 'speaking');
+            orbEl.style.transform = 'scale(1)';
+          }
+          if (tagEl) {
+            tagEl.textContent = message || 'Pronta para ouvir';
+            tagEl.style.color = '';
+            tagEl.style.borderColor = '';
+          }
+        }
+        appendSerialLog('VAD', message || 'Pronto para ouvir', 'vad');
+      }
+    }
+
+    // Gerenciador de Reprodução de Áudio e Sintese de Voz
+    let currentAudio = null;
+    let audioQueue = [];
+    let isPlayingQueue = false;
+
+    // Desbloqueia reprodução de áudio na primeira interação do usuário na página
+    let audioUnlocked = false;
+    function unlockAudioContext() {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      try {
+        const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+        silent.play().catch(() => {});
+      } catch (e) {}
+    }
+    window.addEventListener('click', unlockAudioContext, { once: true });
+    window.addEventListener('touchstart', unlockAudioContext, { once: true });
+
+    function interruptPlayback() {
+      if (currentAudio) {
+        try {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        } catch (e) {}
+        currentAudio = null;
+      }
+      audioQueue = [];
+      isPlayingQueue = false;
+      state.isSpeaking = false;
+      const orbEl = document.getElementById('orb-trigger');
+      if (orbEl) {
+        orbEl.classList.remove('speaking');
+        orbEl.style.transform = 'scale(1)';
+      }
+      const tagEl = document.getElementById('voice-state-tag');
+      if (tagEl) {
+        tagEl.textContent = 'Pronta para ouvir';
+        tagEl.style.color = '';
+        tagEl.style.borderColor = '';
+      }
+    }
+
+    function enqueueAudioChunk(base64Data) {
+      if (!base64Data) return;
+      const audioUrl = `data:audio/mpeg;base64,${base64Data}`;
+      audioQueue.push(audioUrl);
+      if (!isPlayingQueue) {
+        playNextInQueue();
+      }
+    }
+
+    function playNextInQueue() {
+      if (audioQueue.length === 0) {
+        isPlayingQueue = false;
+        state.isSpeaking = false;
+        const orbEl = document.getElementById('orb-trigger');
+        if (orbEl) {
+          orbEl.classList.remove('speaking');
+          orbEl.style.transform = 'scale(1)';
+        }
+        const tagEl = document.getElementById('voice-state-tag');
+        if (tagEl) {
+          tagEl.textContent = 'Pronta para ouvir';
+          tagEl.style.color = '';
+          tagEl.style.borderColor = '';
+        }
+        return;
+      }
+
+      isPlayingQueue = true;
+      state.isSpeaking = true;
+      const orbEl = document.getElementById('orb-trigger');
+      if (orbEl) {
+        orbEl.classList.add('speaking');
+        orbEl.classList.remove('listening', 'thinking');
+      }
+      const tagEl = document.getElementById('voice-state-tag');
+      if (tagEl) {
+        tagEl.textContent = 'EVA falando...';
+        tagEl.style.color = 'var(--text-primary)';
+      }
+
+      const nextUrl = audioQueue.shift();
+      const audio = new Audio(nextUrl);
+      currentAudio = audio;
+
+      audio.onended = () => { playNextInQueue(); };
+      audio.onerror = () => { playNextInQueue(); };
+      audio.play().catch(() => { playNextInQueue(); });
+    }
+
+    async function playVoiceResponse(replyText) {
+      if (isPlayingQueue || state.isSpeaking) return;
+      if (!replyText || !replyText.trim()) return;
+
+      try {
+        state.isSpeaking = true;
+        const orbEl = document.getElementById('orb-trigger');
+        if (orbEl) {
+          orbEl.classList.add('speaking');
+          orbEl.classList.remove('listening', 'thinking');
+        }
+        const tagEl = document.getElementById('voice-state-tag');
+        if (tagEl) {
+          tagEl.textContent = 'EVA falando...';
+          tagEl.style.color = 'var(--text-primary)';
+        }
+
+        const res = await fetch(`/api/tts?text=${encodeURIComponent(replyText)}`);
+        const blob = await res.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        currentAudio = audio;
+
+        audio.onended = () => {
+          state.isSpeaking = false;
+          currentAudio = null;
+          if (orbEl) {
+            orbEl.classList.remove('speaking');
+            orbEl.style.transform = 'scale(1)';
+          }
+          if (tagEl) {
+            tagEl.textContent = 'Pronta para ouvir';
+            tagEl.style.color = '';
+            tagEl.style.borderColor = '';
+          }
+        };
+        audio.onerror = () => {
+          state.isSpeaking = false;
+          currentAudio = null;
+          if (orbEl) orbEl.classList.remove('speaking');
+          if (tagEl) tagEl.textContent = 'Pronta para ouvir';
+        };
+
+        await audio.play();
+      } catch (e) {
+        state.isSpeaking = false;
+        currentAudio = null;
+        const orbEl = document.getElementById('orb-trigger');
+        if (orbEl) orbEl.classList.remove('speaking');
+        const tagEl = document.getElementById('voice-state-tag');
+        if (tagEl) tagEl.textContent = 'Pronta para ouvir';
       }
     }
 
@@ -2081,6 +2341,17 @@
     }
 
     async function handleOrbClick() {
+      // Prioridade absoluta: microfone de hardware do ESP32
+      if (state.isEsp32Connected) {
+        appendSerialLog('MIC', 'Microfone ESP32 ativo! Fale diretamente no microfone da placa.', 'mic');
+        const tagEl = document.getElementById('voice-state-tag');
+        if (tagEl) {
+          const prev = tagEl.textContent;
+          tagEl.textContent = '🎙️ Fale no microfone do ESP32!';
+          setTimeout(() => { if (tagEl.textContent.includes('Fale no microfone')) tagEl.textContent = prev; }, 3000);
+        }
+        return;
+      }
       toggleVoiceRecording();
     }
 
@@ -2111,9 +2382,9 @@
         state.mediaRecorder.start();
         state.isRecording = true;
         updateVoiceUI(true);
-        appendSerialLog('MIC', 'Gravação de voz local iniciada via navegador.', 'mic');
+        appendSerialLog('MIC', 'Gravação local no navegador iniciada (fallback).', 'mic');
       } catch (err) {
-        alert('Microfone não acessível: ' + err.message);
+        alert('Microfone do notebook não acessível: ' + err.message + '\nUtilize o microfone do ESP32!');
       }
     }
 
@@ -2132,12 +2403,12 @@
       const tagEl = document.getElementById('voice-state-tag');
 
       if (recording) {
-        if (orbTrigger) orbTrigger.classList.add('speaking');
+        if (orbTrigger) orbTrigger.classList.add('listening');
         if (btnIcon) btnIcon.textContent = '⏹️';
         if (btnText) btnText.textContent = 'Ouvindo...';
-        if (tagEl) tagEl.textContent = 'Gravando áudio...';
+        if (tagEl) tagEl.textContent = 'Gravando áudio local...';
       } else {
-        if (orbTrigger) orbTrigger.classList.remove('speaking');
+        if (orbTrigger) orbTrigger.classList.remove('listening');
         if (btnIcon) btnIcon.textContent = '🎙️';
         if (btnText) btnText.textContent = 'Falar';
         if (tagEl) tagEl.textContent = 'Processando com Whisper...';
@@ -2154,10 +2425,12 @@
         });
         const data = await res.json();
         const tTotal = Math.round(performance.now() - t0);
-        document.getElementById('last-latency-total').textContent = `${tTotal} ms total`;
+        const latEl = document.getElementById('last-latency-total');
+        if (latEl) latEl.textContent = `${tTotal} ms total`;
 
         if (data.reply) {
           appendConversationTurn(data.userInputText, data.reply);
+          playVoiceResponse(data.reply);
         }
         if (data.telemetry) {
           updateTelemetryBars(data.telemetry);
@@ -2166,7 +2439,7 @@
         console.error('Erro no envio de voz:', err);
       } finally {
         const tagEl = document.getElementById('voice-state-tag');
-        if (tagEl) tagEl.textContent = 'Pronta para ouvir';
+        if (tagEl && !state.isSpeaking) tagEl.textContent = 'Pronta para ouvir';
       }
     }
 
@@ -2205,18 +2478,7 @@
     }
 
     async function playTtsForText(text) {
-      try {
-        const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
-        const blob = await res.blob();
-        const audio = new Audio(URL.createObjectURL(blob));
-        state.isSpeaking = true;
-        document.getElementById('orb-trigger')?.classList.add('speaking');
-        audio.onended = () => {
-          state.isSpeaking = false;
-          document.getElementById('orb-trigger')?.classList.remove('speaking');
-        };
-        audio.play();
-      } catch (e) {}
+      return playVoiceResponse(text);
     }
 
     function appendConversationTurn(userText, replyText) {

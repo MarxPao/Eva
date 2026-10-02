@@ -131,8 +131,13 @@ DIRETRIZES DE REFATORAÇÃO:
           interactionId,
           timestamp: new Date(),
           providerUsed: { llm: this.llmOrchestrator.getPrimary().name },
-          costs: { llmUSD: 0, sttUSD: 0, ttsUSD: 0, totalUSD: 0 },
-          latency: { llmMs: 0, totalMs: 0 },
+          fallbackTriggered: false,
+          costs: this.costTracker.computeTotalBreakdown({
+            llmModelKey: `${this.llmOrchestrator.getPrimary().name}:${this.llmOrchestrator.getPrimary().model}`,
+            inputTokens: 0,
+            outputTokens: 0,
+          }),
+          latency: { totalMs: 0 },
         },
         messages,
       };

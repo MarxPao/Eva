@@ -174,152 +174,167 @@ interface AudioStreamSession {
 let activeStreamSession: AudioStreamSession | null = null;
 
 async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace) {
-  broadcastToClients(JSON.stringify({
-    type: 'voice_status',
-    state: 'processing',
-    message: 'Transcrevendo áudio do microfone...',
-  }));
+  try {
+    broadcastToClients(JSON.stringify({
+      type: 'voice_status',
+      state: 'processing',
+      message: 'Transcrevendo áudio do microfone...',
+    }));
 
-  // 1. Transcrição STT (Groq Whisper / Deepgram)
-  const sttResult = await voicePipeline['sttOrchestrator'].execute(
-    (stt) => stt.transcribe(audioBuffer, { language: 'pt' }),
-    'Pipeline_Voice_STT'
-  );
-  trace.mark('t2');
+    // 1. Transcrição STT (Groq Whisper / Deepgram)
+    const sttResult = await voicePipeline['sttOrchestrator'].execute(
+      (stt) => stt.transcribe(audioBuffer, { language: 'pt' }),
+      'Pipeline_Voice_STT'
+    );
+    trace.mark('t2');
 
-  const userInputText = (sttResult.result.text || '').trim();
+    const userInputText = (sttResult.result.text || '').trim();
 
-  // 2. Filtro Anti-Ruído Inteligente: se for ruído de fundo, respiração ou alucinação do Whisper, descarta
-  if (isWhisperNoise(userInputText)) {
-    console.log(`[STT Anti-Ruído] Descartado áudio sem fala legítima: "${userInputText}"`);
+    // 2. Filtro Anti-Ruído Inteligente: se for ruído de fundo, respiração ou alucinação do Whisper, descarta
+    if (isWhisperNoise(userInputText)) {
+      console.log(`[STT Anti-Ruído] Descartado áudio sem fala legítima: "${userInputText}"`);
+      broadcastToClients(JSON.stringify({
+        type: 'voice_status',
+        state: 'idle',
+        message: 'Pronto para ouvir',
+      }));
+      return { userInputText: '', reply: '', ignored: true };
+    }
+
+    // 2.1 Cancelamento de Eco Inteligente com Suporte a Interrupção (Barge-In com 'eva:')
+    const isSpeakingNow = !!(
+      (activeInteraction && (activeInteraction.isSpeaking || Date.now() < activeInteraction.speakingUntil)) ||
+      Date.now() < lastSpeakerActiveTime
+    );
+
+    const containsEva = hasEvaWakeWord(userInputText);
+
+    if (isSpeakingNow) {
+      // Se a EVA estava falando pelos alto-falantes e o áudio NÃO contém a chamada 'eva:',
+      // trata-se de eco acústico captado do próprio cômodo. Descarta para evitar auto-resposta.
+      if (!containsEva) {
+        console.log(`[AEC Anti-Eco] Áudio captado durante fala da EVA sem prefixo 'eva' descartado: "${userInputText}"`);
+        broadcastToClients(JSON.stringify({
+          type: 'voice_status',
+          state: 'idle',
+          message: 'Pronto para ouvir',
+        }));
+        return { userInputText: '', reply: '', ignored: true, reason: 'aec_echo_without_wake_word' };
+      }
+      console.log(`[BARGE-IN] Comando 'eva' detectado durante fala da EVA! Interrompendo resposta anterior...`);
+    }
+
+    // Interrompe fala anterior se estiver em andamento (barge-in)
+    const interruption = interruptActiveInteraction(userInputText);
+
+    const currentInteractionId = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const currentAbortController = new AbortController();
+
+    activeInteraction = {
+      id: currentInteractionId,
+      abortController: currentAbortController,
+      prompt: userInputText,
+      partialReply: '',
+      isSpeaking: true,
+      speakingUntil: Date.now() + 4000,
+    };
+
+    console.log(`[STT Fala Confirmada] Usuário disse: "${userInputText}"${interruption.wasInterrupted ? ' [INTERROMPENDO RESPOSTA ANTERIOR]' : ''}`);
+
+    let hasDispatchedFirstAudio = false;
+
+    // 3. Processamento do agente e síntese TTS em pipeline direto com suporte a refatoração
+    const result = await voicePipeline.processText(userInputText, [], {
+      synthesizeAudio: true,
+      trace,
+      abortSignal: currentAbortController.signal,
+      interruptedFrom: interruption.wasInterrupted ? {
+        previousPrompt: interruption.previousPrompt || '',
+        partialResponse: interruption.partialReply || '',
+      } : undefined,
+      onToken: (token) => {
+        if (activeInteraction && activeInteraction.id === currentInteractionId) {
+          activeInteraction.partialReply += token;
+        }
+      },
+      onSentenceAudio: (audioChunk, sentenceIndex) => {
+        if (currentAbortController.signal.aborted) return;
+        if (!hasDispatchedFirstAudio) {
+          hasDispatchedFirstAudio = true;
+          trace.mark('t6');
+        }
+        broadcastToClients(JSON.stringify({
+          type: 'audio_sentence_chunk',
+          index: sentenceIndex,
+          data: audioChunk.toString('base64'),
+          format: 'audio/mpeg',
+        }));
+      },
+    });
+
+    if (currentAbortController.signal.aborted) {
+      console.log(`[VoicePipeline] Interação ${currentInteractionId} abortada por nova fala.`);
+      return { userInputText, reply: '', ignored: true, aborted: true };
+    }
+
+    // 4. Salva o áudio no cache para que a interface web toque instantaneamente (0ms)
+    if (result.responseAudioBuffer && result.agentResult.textResponse) {
+      setCachedTts(result.agentResult.textResponse, result.responseAudioBuffer);
+    }
+
+    // 5. Calcula duração estimada da fala para o AEC (Cancelamento de Eco)
+    const textLen = (result.agentResult.textResponse || '').length;
+    const estDurationMs = result.responseAudioBuffer
+      ? Math.max(3500, Math.round((result.responseAudioBuffer.length / 6000 + 1.8) * 1000))
+      : Math.max(3500, Math.round(textLen * 65 + 1800));
+
+    if (activeInteraction && activeInteraction.id === currentInteractionId) {
+      activeInteraction.speakingUntil = Date.now() + estDurationMs;
+      activeInteraction.isSpeaking = true;
+    }
+    lastSpeakerActiveTime = Date.now() + estDurationMs;
+
+    // 6. Notifica o ESP32 sobre a fala da EVA para controle de eco
+    if (espWsClient && isEspWsConnected) {
+      try {
+        espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: true, durationMs: estDurationMs }));
+      } catch (e) {}
+    }
+
+    // 7. Transmite a transcrição e a resposta para todos os clientes conectados via SSE
+    broadcastToClients(JSON.stringify({
+      type: 'voice_interaction',
+      userInputText,
+      reply: result.agentResult.textResponse,
+      requiresConfirmation: result.agentResult.requiresConfirmation,
+      pendingConfirmation: result.agentResult.pendingConfirmation,
+      toolExecutions: result.agentResult.toolExecutions,
+      telemetry: result.telemetry,
+    }));
+
+    if (!hasDispatchedFirstAudio) {
+      trace.mark('t6');
+    }
+    console.log(trace.report());
+
+    return {
+      userInputText,
+      reply: result.agentResult.textResponse,
+      requiresConfirmation: result.agentResult.requiresConfirmation,
+      pendingConfirmation: result.agentResult.pendingConfirmation,
+      telemetry: result.telemetry,
+      hasAudioResponse: !!result.responseAudioBuffer,
+      durationMs: estDurationMs,
+    };
+  } catch (err: any) {
+    console.error('[processVoiceAudioBuffer Erro]', err);
     broadcastToClients(JSON.stringify({
       type: 'voice_status',
       state: 'idle',
       message: 'Pronto para ouvir',
     }));
-    return { userInputText: '', reply: '', ignored: true };
+    return { userInputText: '', reply: '', error: err.message || 'Erro no pipeline' };
   }
-
-  // 2.1 Cancelamento de Eco Inteligente com Suporte a Interrupção (Barge-In com 'eva:')
-  const isSpeakingNow = !!(
-    (activeInteraction && (activeInteraction.isSpeaking || Date.now() < activeInteraction.speakingUntil)) ||
-    Date.now() < lastSpeakerActiveTime
-  );
-
-  const containsEva = hasEvaWakeWord(userInputText);
-
-  if (isSpeakingNow) {
-    // Se a EVA estava falando pelos alto-falantes e o áudio NÃO contém a chamada 'eva:',
-    // trata-se de eco acústico captado do próprio cômodo. Descarta para evitar auto-resposta.
-    if (!containsEva) {
-      console.log(`[AEC Anti-Eco] Áudio captado durante fala da EVA sem prefixo 'eva' descartado: "${userInputText}"`);
-      return { userInputText: '', reply: '', ignored: true, reason: 'aec_echo_without_wake_word' };
-    }
-    console.log(`[BARGE-IN] Comando 'eva' detectado durante fala da EVA! Interrompendo resposta anterior...`);
-  }
-
-  // Interrompe fala anterior se estiver em andamento (barge-in)
-  const interruption = interruptActiveInteraction(userInputText);
-
-  const currentInteractionId = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-  const currentAbortController = new AbortController();
-
-  activeInteraction = {
-    id: currentInteractionId,
-    abortController: currentAbortController,
-    prompt: userInputText,
-    partialReply: '',
-    isSpeaking: true,
-    speakingUntil: Date.now() + 4000,
-  };
-
-  console.log(`[STT Fala Confirmada] Usuário disse: "${userInputText}"${interruption.wasInterrupted ? ' [INTERROMPENDO RESPOSTA ANTERIOR]' : ''}`);
-
-  let hasDispatchedFirstAudio = false;
-
-  // 3. Processamento do agente e síntese TTS em pipeline direto com suporte a refatoração
-  const result = await voicePipeline.processText(userInputText, [], {
-    synthesizeAudio: true,
-    trace,
-    abortSignal: currentAbortController.signal,
-    interruptedFrom: interruption.wasInterrupted ? {
-      previousPrompt: interruption.previousPrompt || '',
-      partialResponse: interruption.partialReply || '',
-    } : undefined,
-    onToken: (token) => {
-      if (activeInteraction && activeInteraction.id === currentInteractionId) {
-        activeInteraction.partialReply += token;
-      }
-    },
-    onSentenceAudio: (audioChunk, sentenceIndex) => {
-      if (currentAbortController.signal.aborted) return;
-      if (!hasDispatchedFirstAudio) {
-        hasDispatchedFirstAudio = true;
-        trace.mark('t6');
-      }
-      broadcastToClients(JSON.stringify({
-        type: 'audio_sentence_chunk',
-        index: sentenceIndex,
-        data: audioChunk.toString('base64'),
-        format: 'audio/mpeg',
-      }));
-    },
-  });
-
-  if (currentAbortController.signal.aborted) {
-    console.log(`[VoicePipeline] Interação ${currentInteractionId} abortada por nova fala.`);
-    return { userInputText, reply: '', ignored: true, aborted: true };
-  }
-
-  // 4. Salva o áudio no cache para que a interface web toque instantaneamente (0ms)
-  if (result.responseAudioBuffer && result.agentResult.textResponse) {
-    setCachedTts(result.agentResult.textResponse, result.responseAudioBuffer);
-  }
-
-  // 5. Calcula duração estimada da fala para o AEC (Cancelamento de Eco)
-  const textLen = (result.agentResult.textResponse || '').length;
-  const estDurationMs = result.responseAudioBuffer
-    ? Math.max(3500, Math.round((result.responseAudioBuffer.length / 6000 + 1.8) * 1000))
-    : Math.max(3500, Math.round(textLen * 65 + 1800));
-
-  if (activeInteraction && activeInteraction.id === currentInteractionId) {
-    activeInteraction.speakingUntil = Date.now() + estDurationMs;
-    activeInteraction.isSpeaking = true;
-  }
-  lastSpeakerActiveTime = Date.now() + estDurationMs;
-
-  // 6. Notifica o ESP32 sobre a fala da EVA para controle de eco
-  if (espWsClient && isEspWsConnected) {
-    try {
-      espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: true, durationMs: estDurationMs }));
-    } catch (e) {}
-  }
-
-  // 7. Transmite a transcrição e a resposta para todos os clientes conectados via SSE
-  broadcastToClients(JSON.stringify({
-    type: 'voice_interaction',
-    userInputText,
-    reply: result.agentResult.textResponse,
-    requiresConfirmation: result.agentResult.requiresConfirmation,
-    pendingConfirmation: result.agentResult.pendingConfirmation,
-    toolExecutions: result.agentResult.toolExecutions,
-    telemetry: result.telemetry,
-  }));
-
-  if (!hasDispatchedFirstAudio) {
-    trace.mark('t6');
-  }
-  console.log(trace.report());
-
-  return {
-    userInputText,
-    reply: result.agentResult.textResponse,
-    requiresConfirmation: result.agentResult.requiresConfirmation,
-    pendingConfirmation: result.agentResult.pendingConfirmation,
-    telemetry: result.telemetry,
-    hasAudioResponse: !!result.responseAudioBuffer,
-    durationMs: estDurationMs,
-  };
 }
 
 function startEsp32Bridge() {
@@ -370,6 +385,7 @@ function startEsp32Bridge() {
         try {
           const parsed = JSON.parse(textMsg);
           if (parsed.type === 'audio_stream_start') {
+            console.log(`[WS Streaming T1] 🎙️ Início de captura de áudio recebido do hardware ESP32!`);
             activeStreamSession = {
               id: `ws_stream_${Date.now()}`,
               chunks: [],
@@ -380,7 +396,7 @@ function startEsp32Bridge() {
             broadcastToClients(JSON.stringify({
               type: 'voice_status',
               state: 'recording',
-              message: 'Ouvindo fala (streaming contínuo)...',
+              message: 'Ouvindo fala (microfone ESP32)...',
             }));
             return;
           }
@@ -411,10 +427,15 @@ function startEsp32Bridge() {
               session.trace.mark('t1', session.t_first_chunk_received);
             }
 
-            console.log(`[WS Streaming T1] Concluído: ${session.chunks.length} chunks (${session.totalBytes} bytes). Delta pós-cutoff (t_upload_complete - t0): ${deltaUpload} ms.`);
+            console.log(`[WS Streaming T1] Concluído: ${session.chunks.length} chunks (${session.totalBytes} bytes). Processando áudio...`);
 
             if (session.totalBytes < 1600) {
-              console.log('[WS Streaming T1] Descartado: áudio muito curto.');
+              console.log('[WS Streaming T1] Descartado: áudio muito curto (< 1600 bytes).');
+              broadcastToClients(JSON.stringify({
+                type: 'voice_status',
+                state: 'idle',
+                message: 'Pronto para ouvir',
+              }));
               return;
             }
 
@@ -585,7 +606,11 @@ const server = http.createServer(async (req, res) => {
       );
       const isEvaCommand = hasEvaWakeWord(message);
 
-      let interruption = { wasInterrupted: false, previousPrompt: undefined as string | undefined, partialReply: undefined as string | undefined };
+      let interruption: {
+        wasInterrupted: boolean;
+        previousPrompt?: string;
+        partialReply?: string;
+      } = { wasInterrupted: false };
       if (isSpeakingNow || isEvaCommand) {
         interruption = interruptActiveInteraction(message);
       }
