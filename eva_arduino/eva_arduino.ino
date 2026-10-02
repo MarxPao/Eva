@@ -23,11 +23,26 @@ const char* WIFI_SSID = "Julimara";
 const char* WIFI_PASS = "julimara13";
 const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
 
-// Pinos
-#define I2S_SD_PIN   13
-#define I2S_WS_PIN   1
-#define I2S_SCK_PIN  2
-#define LED_PIN      48
+// ============================================================================
+// Configuração de Pinos: Compatibilidade ESP32 Clássico vs ESP32-S3
+// ============================================================================
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+  // ESP32-S3
+  #define I2S_SD_PIN   13
+  #define I2S_WS_PIN   1
+  #define I2S_SCK_PIN  2
+  #define LED_PIN      48
+  #define LOG_PRINTLN(x) do { Serial.println(x); Serial0.println(x); } while(0)
+  #define LOG_PRINTF(...) do { Serial.printf(__VA_ARGS__); Serial0.printf(__VA_ARGS__); } while(0)
+#else
+  // ESP32 Clássico (WROOM-32, DOIT DevKit v1, etc.)
+  #define I2S_SD_PIN   32  // Serial Data / DOUT (compartilhado por ambos os microfones)
+  #define I2S_WS_PIN   15  // Word Select / LRCLK (compartilhado)
+  #define I2S_SCK_PIN  14  // Serial Clock / BCLK (compartilhado)
+  #define LED_PIN      2   // LED Azul onboard padrão do ESP32 clássico
+  #define LOG_PRINTLN(x) Serial.println(x)
+  #define LOG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#endif
 
 #define I2S_SAMPLE_RATE     16000
 #define BUFFER_PAIRS        256 // 256 pares (512 samples) = 16ms por leitura
@@ -78,9 +93,6 @@ uint32_t streamDroppedChunks = 0;
 static int16_t linPreroll[PREROLL_SAMPLES];
 
 unsigned long speakerMuteUntil = 0;
-
-#define LOG_PRINTLN(x) do { Serial.println(x); Serial0.println(x); } while(0)
-#define LOG_PRINTF(...) do { Serial.printf(__VA_ARGS__); Serial0.printf(__VA_ARGS__); } while(0)
 
 void fillWavHeader(uint8_t* header, uint32_t pcmDataBytes) {
   uint32_t totalDataLen = pcmDataBytes;
@@ -241,11 +253,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 void setup() {
   Serial.begin(115200);
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
   Serial0.begin(115200);
+#endif
   delay(1000);
 
   LOG_PRINTLN("\n==================================");
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
   LOG_PRINTLN("    EVA — ESP32-S3 VOICE ENGINE   ");
+#else
+  LOG_PRINTLN("    EVA — ESP32 CLASSIC VOICE ENGINE");
+#endif
   LOG_PRINTLN("==================================");
 
   pinMode(LED_PIN, OUTPUT);
@@ -341,7 +359,10 @@ void loop() {
         // Alimenta buffer circular de pré-roll (últimos 192ms) quando em repouso
         if (micState == STATE_IDLE) {
           for (size_t i = 0; i < pairs; i++) {
-            int32_t val = audioBuffer[i * 2] >> 13;
+            int32_t valL = audioBuffer[i * 2] >> 13;
+            int32_t valR = audioBuffer[i * 2 + 1] >> 13;
+            // Mixagem inteligente de 2 microfones (ou seleção automática do canal ativo se apenas 1 estiver ligado)
+            int32_t val = (rmsL > 50.0f && rmsR > 50.0f) ? ((valL + valR) / 2) : ((rmsL >= rmsR) ? valL : valR);
             if (val > 32767) val = 32767;
             if (val < -32768) val = -32768;
             prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES] = (int16_t)val;
@@ -383,7 +404,9 @@ void loop() {
         if (micState == STATE_RECORDING) {
           int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
           for (size_t i = 0; i < pairs; i++) {
-            int32_t val = audioBuffer[i * 2] >> 13; // Ganho ideal para Whisper
+            int32_t valL = audioBuffer[i * 2] >> 13;
+            int32_t valR = audioBuffer[i * 2 + 1] >> 13;
+            int32_t val = (rmsL > 50.0f && rmsR > 50.0f) ? ((valL + valR) / 2) : ((rmsL >= rmsR) ? valL : valR);
             if (val > 32767) val = 32767;
             if (val < -32768) val = -32768;
             int16_t sample = (int16_t)val;
