@@ -6,7 +6,7 @@
   <title>EVA — Presença Inteligente</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%238DA785'/></svg>">
 
-  <!-- Tipografia Editorial: Newsreader/Fraunces (Display Serif) + Plus Jakarta Sans/Inter (Interface) -->
+  <!-- Tipografia Editorial: Fraunces (Display Serif) + Plus Jakarta Sans/Inter (Interface) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -155,7 +155,7 @@
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .btn-top {
@@ -189,6 +189,7 @@
       align-items: center;
       gap: 6px;
       color: var(--text-secondary);
+      cursor: pointer;
     }
 
     .hw-badge-dot {
@@ -239,7 +240,6 @@
       transition: all 0.3s ease;
     }
 
-    /* Quando em modo Celular Estrito ou Viewport Pequeno */
     @media (max-width: 1080px) {
       .desktop-layout {
         display: flex;
@@ -262,7 +262,6 @@
       position: relative;
     }
 
-    /* Cabeçalho Home & Sol/Lua */
     .presence-top-row {
       display: flex;
       align-items: center;
@@ -313,7 +312,6 @@
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
     }
 
-    /* O Arco da Aura */
     .orb-aura-arc {
       position: absolute;
       top: 36px;
@@ -374,7 +372,6 @@
       50% { transform: scale(1.025); filter: brightness(1.05); }
     }
 
-    /* Ondas pulsantes de fala/escuta */
     .orb-pulse-wave {
       position: absolute;
       width: 100%;
@@ -416,7 +413,6 @@
       letter-spacing: -0.5px;
       color: var(--text-primary);
       cursor: pointer;
-      position: relative;
     }
 
     .greeting-username:hover::after {
@@ -576,7 +572,7 @@
       height: 44px;
     }
 
-    /* NAVEGAÇÃO INFERIOR ESTILO APP (HOME, ATIVIDADE, CONFIGURAÇÕES) */
+    /* NAVEGAÇÃO INFERIOR DO APP */
     .bottom-app-nav {
       display: flex;
       align-items: center;
@@ -614,12 +610,8 @@
       color: var(--text-primary);
     }
 
-    .nav-tab-btn.active svg {
-      stroke-width: 2.4;
-    }
-
     /* =========================================================================
-       COLUNA CENTRAL DESKTOP: CONVERSAÇÃO, TRANSCRIÇÃO & VOZ EM TEMPO REAL
+       COLUNA CENTRAL DESKTOP: CONVERSAÇÃO, TRANSCRIÇÃO & VOZ
        ========================================================================= */
     .desktop-center-column {
       display: flex;
@@ -879,26 +871,248 @@
       color: var(--accent-sage);
     }
 
-    /* Terminal Bluetooth / Serial compacto */
-    .bt-monitor-console {
-      background: var(--bg-card-subtle);
-      border-radius: 14px;
-      padding: 10px 14px;
-      font-family: monospace;
-      font-size: 11px;
-      color: var(--text-secondary);
-      max-height: 100px;
-      overflow-y: auto;
-      line-height: 1.5;
+    /* =========================================================================
+       MONITOR SERIAL PERMANENTE (CAPTAÇÃO I2S AO VIVO — ESP32)
+       ========================================================================= */
+    .serial-monitor-card {
+      background: #0E140C;
+      border: 1px solid rgba(122, 154, 114, 0.45);
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin: 10px 0 14px 0;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 25px rgba(122, 154, 114, 0.12);
+      position: relative;
+      overflow: hidden;
+      color: #EEF0EC;
     }
 
-    /* =========================================================================
-       MODAL DE INTERAÇÃO DOS MÓDULOS (SAÚDE, CASA, ROTINAS)
-       ========================================================================= */
+    [data-theme="night"] .serial-monitor-card {
+      background: #090E18;
+      border-color: rgba(95, 140, 195, 0.45);
+    }
+
+    .sm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sm-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .sm-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #889984;
+      transition: all 0.3s ease;
+    }
+
+    .sm-pulse-dot.online {
+      background: #7A9A72;
+      box-shadow: 0 0 8px #7A9A72, 0 0 16px rgba(122, 154, 114, 0.6);
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    .sm-pulse-dot.offline {
+      background: #C97B6B;
+      box-shadow: 0 0 6px #C97B6B;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.25); opacity: 1; }
+    }
+
+    .sm-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #B9CBB1;
+    }
+
+    .sm-tag {
+      font-size: 10px;
+      font-family: monospace;
+      background: rgba(122, 154, 114, 0.18);
+      border: 1px solid rgba(122, 154, 114, 0.35);
+      padding: 2px 7px;
+      border-radius: 6px;
+      color: #CBD1C7;
+    }
+
+    .sm-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sm-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #EEF0EC;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .sm-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .sm-hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .sm-hud-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sm-hud-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      color: #9BA69A;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .sm-hud-val {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #EEF0EC;
+    }
+
+    .sm-hud-state {
+      color: #7A9A72;
+    }
+
+    /* Barra VU em tempo real */
+    .sm-vu-container {
+      margin-bottom: 12px;
+    }
+
+    .sm-vu-bar-wrap {
+      width: 100%;
+      height: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .sm-vu-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4F6B4A 0%, #7A9A72 55%, #D7C7A3 80%, #C97B6B 100%);
+      transition: width 0.06s ease-out;
+      border-radius: 6px;
+    }
+
+    .sm-vu-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #9BA69A;
+      font-family: monospace;
+      margin-top: 4px;
+    }
+
+    /* Terminal Console */
+    .sm-terminal-container {
+      background: #080B07;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      height: 240px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 10px 12px;
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      scroll-behavior: smooth;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .sm-terminal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .sm-log-line {
+      display: flex;
+      gap: 8px;
+      word-break: break-all;
+    }
+
+    .sm-log-time {
+      color: #6C786A;
+      flex-shrink: 0;
+    }
+
+    .sm-tag-pill {
+      font-size: 10px;
+      padding: 0 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .sm-tag-pill.mic { background: rgba(122, 154, 114, 0.25); color: #B9CBB1; }
+    .sm-tag-pill.vad { background: rgba(215, 199, 163, 0.25); color: #E8DCBE; }
+    .sm-tag-pill.bt  { background: rgba(79, 128, 176, 0.25); color: #94C1ED; }
+    .sm-tag-pill.sys { background: rgba(255, 255, 255, 0.15); color: #EEF0EC; }
+    .sm-tag-pill.err { background: rgba(201, 123, 107, 0.25); color: #F0A395; }
+
+    .sm-log-text {
+      color: #CBD1C7;
+      flex: 1;
+    }
+
+    .sm-log-bar {
+      font-family: monospace;
+      color: #7A9A72;
+    }
+
+    .sm-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #9BA69A;
+      font-family: monospace;
+      margin-top: 8px;
+    }
+
+    /* MODAL DE INTERAÇÃO DOS MÓDULOS E CONFIGURAÇÕES */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(8px);
       display: none;
       align-items: center;
@@ -917,12 +1131,14 @@
       border: 1px solid var(--border-subtle);
       border-radius: 32px;
       width: 100%;
-      max-width: 440px;
-      padding: 28px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 26px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .modal-header {
@@ -965,6 +1181,12 @@
     </div>
 
     <div class="top-actions">
+      <!-- Botão Direto para o Monitor Serial de Diagnóstico -->
+      <button class="btn-top" onclick="openConfigModal()" title="Abrir Monitor Serial de Áudio e Diagnóstico">
+        <span>📟</span>
+        <span>Monitor Serial</span>
+      </button>
+
       <!-- Alternador de Visualização (Modo Celular vs Desktop Expandido) -->
       <button class="btn-top" id="btn-toggle-view" onclick="toggleViewportMode()" title="Alternar entre visualização celular e desktop">
         <span id="btn-view-icon">📱</span>
@@ -978,7 +1200,7 @@
       </button>
 
       <!-- Badge de Hardware ESP32 & Bluetooth -->
-      <div class="hw-badge-pill" id="hw-badge-pill" title="Status de conexão com o ESP32 clássico via WebSocket / Bluetooth">
+      <div class="hw-badge-pill" id="hw-badge-pill" onclick="openConfigModal()" title="Clique para abrir Diagnóstico e Logs">
         <span class="hw-badge-dot" id="hw-dot"></span>
         <span id="hw-badge-label">ESP32: Conectando...</span>
       </div>
@@ -999,7 +1221,7 @@
           <div class="presence-top-row">
             <h2 class="presence-home-title">Home</h2>
             <div class="presence-celestial-icon" id="celestial-icon" onclick="switchThemeToggle()" title="Alternar Sol / Lua">
-              <!-- Ícone dinâmico inserido via JS (Sol ou Lua com estrela) -->
+              <!-- Ícone dinâmico inserido via JS -->
             </div>
           </div>
 
@@ -1030,7 +1252,6 @@
             <div class="weather-side">
               <span class="weather-temp">24°C</span>
               <svg class="weather-icon-peek" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <!-- Nuvem estilizada com raio solar -->
                 <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
                 <path d="M12 3v2M18.36 5.64l-1.42 1.42M21 12h-2"/>
               </svg>
@@ -1108,13 +1329,9 @@
             <!-- MÓDULO 3: GLIFO BAUHAUS EMPILHADO (Rotinas, Ações & Automações) -->
             <div class="module-card" onclick="openModuleModal('rotinas')" title="Rotinas & Ações da EVA">
               <svg class="module-icon-svg" viewBox="0 0 48 48">
-                <!-- Barra horizontal superior arredondada -->
                 <rect x="6" y="8" width="36" height="9" rx="4.5" fill="currentColor"/>
-                <!-- Haste vertical -->
                 <rect x="18" y="15" width="9" height="26" rx="4.5" fill="currentColor"/>
-                <!-- Pastilha intermediária à direita -->
                 <rect x="22" y="21" width="20" height="8.5" rx="4.25" fill="currentColor"/>
-                <!-- Pastilha inferior à direita -->
                 <rect x="22" y="32.5" width="20" height="8.5" rx="4.25" fill="currentColor"/>
               </svg>
             </div>
@@ -1202,7 +1419,6 @@
           </div>
 
           <div class="devices-grid">
-            <!-- Dispositivo 1: Luz da Sala -->
             <div class="device-tile on" id="tile-luz-sala" onclick="toggleDevice('light')">
               <div class="device-tile-top">
                 <span class="device-tile-name">Luz da Sala</span>
@@ -1211,7 +1427,6 @@
               <span class="device-tile-sub">Lâmpada Principal</span>
             </div>
 
-            <!-- Dispositivo 2: Ar Condicionado -->
             <div class="device-tile" id="tile-ar-quarto" onclick="toggleDevice('ac')">
               <div class="device-tile-top">
                 <span class="device-tile-name">Ar Condic.</span>
@@ -1220,7 +1435,6 @@
               <span class="device-tile-sub">Quarto Principal</span>
             </div>
 
-            <!-- Dispositivo 3: Ventilador -->
             <div class="device-tile" id="tile-ventilador" onclick="toggleDevice('fan')">
               <div class="device-tile-top">
                 <span class="device-tile-name">Ventilador</span>
@@ -1229,7 +1443,6 @@
               <span class="device-tile-sub">Sala de Estar</span>
             </div>
 
-            <!-- Dispositivo 4: Fechadura -->
             <div class="device-tile" id="tile-fechadura" onclick="toggleDevice('lock')">
               <div class="device-tile-top">
                 <span class="device-tile-name">Fechadura</span>
@@ -1240,7 +1453,7 @@
           </div>
         </div>
 
-        <!-- CARD: TELEMETRIA DO PIPELINE DE LATÊNCIA (FASE 2) -->
+        <!-- CARD: TELEMETRIA DO PIPELINE DE LATÊNCIA -->
         <div class="side-widget-card">
           <div class="panel-header-row">
             <h3 class="panel-title">Latência & Pipeline</h3>
@@ -1275,9 +1488,12 @@
           </div>
 
           <!-- Console de Comandos Bluetooth Enviados -->
-          <div class="bt-monitor-console" id="bt-console">
-            <div>[BT] 🔵 Serial Classic conectado em COM8 ('EVA_Assistant')</div>
-            <div>[BT] Pronto para despacho de ferramentas IoT</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-top: 6px;">COMANDOS BLUETOOTH / SERIAL:</div>
+          <div class="sm-terminal-container" style="height: 120px;" id="bt-console-container">
+            <div class="sm-terminal-body" id="bt-console">
+              <div class="sm-log-line"><span class="sm-log-time">[BOOT]</span> <span class="sm-tag-pill bt">[BT]</span> <span class="sm-log-text">Serial Classic ativo em COM8 ('EVA_Assistant')</span></div>
+              <div class="sm-log-line"><span class="sm-log-time">[BOOT]</span> <span class="sm-tag-pill sys">[SYS]</span> <span class="sm-log-text">WebSocket conectado em ws://192.168.100.177/ws</span></div>
+            </div>
           </div>
         </div>
 
@@ -1302,6 +1518,106 @@
   </div>
 
   <!-- =========================================================================
+       MODAL DE CONFIGURAÇÕES & MONITOR SERIAL I2S (RECUPERADO E EXPANDIDO)
+       ========================================================================= -->
+  <div class="modal-overlay" id="config-modal" onclick="closeConfigModal(event)">
+    <div class="modal-sheet" style="max-width: 780px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h4 class="modal-title">Configurações & Diagnóstico de Hardware</h4>
+          <span class="sm-tag" id="cfg-esp-status-tag">ESP32: 192.168.100.177</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeConfigModal()">✕</button>
+      </div>
+
+      <!-- SEÇÃO DO MONITOR SERIAL COMPLETO -->
+      <section class="serial-monitor-card" id="serial-monitor-card">
+        <div class="sm-header">
+          <div class="sm-title-group">
+            <span class="sm-pulse-dot online" id="sm-pulse-dot"></span>
+            <span class="sm-title">MONITOR SERIAL · CAPTAÇÃO I2S AO VIVO</span>
+            <span class="sm-tag" id="sm-port-tag">COM8 · ws://192.168.100.177/ws</span>
+          </div>
+          <div class="sm-controls">
+            <button class="sm-btn" id="sm-btn-pause" onclick="toggleSerialPause()" title="Pausar / Retomar rolagem">
+              <span id="sm-pause-icon">⏸</span> <span id="sm-pause-text">Pausar</span>
+            </button>
+            <button class="sm-btn" onclick="clearSerialLog()" title="Limpar mensagens do terminal">
+              <span>🗑</span> <span>Limpar</span>
+            </button>
+            <button class="sm-btn" id="sm-btn-copy" onclick="copySerialLog()" title="Copiar logs para área de transferência">
+              <span>📋</span> <span id="sm-copy-text">Copiar</span>
+            </button>
+            <button class="sm-btn" onclick="reconnectESP32()" title="Forçar reconexão WebSocket com o ESP32">
+              <span>🔄</span> <span>Reconectar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetria HUD -->
+        <div class="sm-hud">
+          <div class="sm-hud-item">
+            <span class="sm-hud-lbl">RMS ATIVO</span>
+            <span class="sm-hud-val" id="sm-hud-rms">0.0</span>
+          </div>
+          <div class="sm-hud-item">
+            <span class="sm-hud-lbl">CANAL</span>
+            <span class="sm-hud-val" id="sm-hud-chan">ESTÉREO (2 MICS)</span>
+          </div>
+          <div class="sm-hud-item">
+            <span class="sm-hud-lbl">ESTADO VAD</span>
+            <span class="sm-hud-val sm-hud-state" id="sm-hud-state">Silêncio</span>
+          </div>
+          <div class="sm-hud-item">
+            <span class="sm-hud-lbl">TAXA I2S</span>
+            <span class="sm-hud-val" id="sm-hud-rate">16 kHz / 32b</span>
+          </div>
+        </div>
+
+        <!-- Barra VU em Tempo Real -->
+        <div class="sm-vu-container">
+          <div class="sm-vu-bar-wrap">
+            <div class="sm-vu-bar-fill" id="sm-vu-bar-fill"></div>
+          </div>
+          <div class="sm-vu-bar-labels">
+            <span>0% (SILÊNCIO)</span>
+            <span>25%</span>
+            <span>50% (VOZ ONSET: 1150)</span>
+            <span>75%</span>
+            <span>100% (PICO)</span>
+          </div>
+        </div>
+
+        <!-- Terminal Console Scrollável -->
+        <div class="sm-terminal-container" id="sm-terminal-container" style="height: 220px;">
+          <div class="sm-terminal-body" id="sm-terminal-body">
+            <!-- Linhas de log injetadas dinamicamente -->
+          </div>
+        </div>
+
+        <!-- Rodapé do Monitor -->
+        <div class="sm-footer">
+          <span id="sm-footer-info">ESP32 Clássico · SD:32 WS:15 SCK:14 · 115200 baud · BT: EVA_Assistant</span>
+          <span id="sm-line-count">0 eventos</span>
+        </div>
+      </section>
+
+      <!-- CONFIGURAÇÕES DE SISTEMA -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px;">
+        <div style="background: var(--bg-card); padding: 14px; border-radius: 16px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Nome de Exibição:</label>
+          <input type="text" id="cfg-user-name-input" class="chat-text-field" style="width: 100%; margin-top: 6px;" value="Rafael" onchange="updateUserNameFromInput(this.value)">
+        </div>
+
+        <div style="background: var(--bg-card); padding: 14px; border-radius: 16px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">IP do ESP32 na Rede:</label>
+          <input type="text" id="cfg-esp-ip-input" class="chat-text-field" style="width: 100%; margin-top: 6px;" value="192.168.100.177" onchange="updateEspIp(this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        LOGICA JAVASCRIPT: SINCRONIZAÇÃO, VOZ, BLUETOOTH & ESTADO
        ========================================================================= -->
   <script>
@@ -1310,6 +1626,7 @@
       theme: localStorage.getItem('eva_theme') || 'day',
       viewport: localStorage.getItem('eva_viewport') || 'desktop',
       userName: localStorage.getItem('eva_user_name') || 'Rafael',
+      espIp: localStorage.getItem('eva_esp_ip') || '192.168.100.177',
       isRecording: false,
       isSpeaking: false,
       isEsp32Connected: false,
@@ -1320,37 +1637,174 @@
         lock: false
       },
       mediaRecorder: null,
-      audioChunks: [],
-      audioContext: null,
-      audioQueue: [],
-      isPlayingAudio: false
+      audioChunks: []
     };
+
+    // Variáveis do Monitor Serial
+    let isSerialAutoScroll = true;
+    let serialLineCounter = 0;
+    const MAX_SERIAL_LINES = 300;
+    const smTerminalContainer = document.getElementById('sm-terminal-container');
+    const smTerminalBody = document.getElementById('sm-terminal-body');
+    const smLineCount = document.getElementById('sm-line-count');
+    const smPauseIcon = document.getElementById('sm-pause-icon');
+    const smPauseText = document.getElementById('sm-pause-text');
+    const smCopyText = document.getElementById('sm-copy-text');
+    const smPulseDot = document.getElementById('sm-pulse-dot');
+    const smPortTag = document.getElementById('sm-port-tag');
+    const smHudRms = document.getElementById('sm-hud-rms');
+    const smHudChan = document.getElementById('sm-hud-chan');
+    const smHudState = document.getElementById('sm-hud-state');
+    const smVuBarFill = document.getElementById('sm-vu-bar-fill');
+
+    function appendSerialLog(tag, content, type = 'mic', isRawHtml = false) {
+      if (!smTerminalBody) return;
+      serialLineCounter++;
+
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const ms = String(now.getMilliseconds()).padStart(3, '0');
+      const timeStr = `[${h}:${m}:${s}.${ms}]`;
+
+      const row = document.createElement('div');
+      row.className = 'sm-log-line';
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'sm-log-time';
+      timeEl.textContent = timeStr;
+      row.appendChild(timeEl);
+
+      const tagEl = document.createElement('span');
+      tagEl.className = `sm-tag-pill ${type}`;
+      tagEl.textContent = `[${tag}]`;
+      row.appendChild(tagEl);
+
+      const textEl = document.createElement('span');
+      textEl.className = 'sm-log-text';
+      if (isRawHtml) {
+        textEl.innerHTML = content;
+      } else {
+        textEl.textContent = content;
+      }
+      row.appendChild(textEl);
+
+      smTerminalBody.appendChild(row);
+
+      while (smTerminalBody.children.length > MAX_SERIAL_LINES) {
+        smTerminalBody.removeChild(smTerminalBody.firstChild);
+      }
+
+      if (smLineCount) {
+        smLineCount.textContent = `${serialLineCounter} eventos`;
+      }
+
+      if (isSerialAutoScroll && smTerminalContainer) {
+        smTerminalContainer.scrollTop = smTerminalContainer.scrollHeight;
+      }
+    }
+
+    function toggleSerialPause() {
+      isSerialAutoScroll = !isSerialAutoScroll;
+      if (smPauseText) smPauseText.textContent = isSerialAutoScroll ? 'Pausar' : 'Retomar';
+      if (smPauseIcon) smPauseIcon.textContent = isSerialAutoScroll ? '⏸' : '▶';
+      if (isSerialAutoScroll && smTerminalContainer) {
+        smTerminalContainer.scrollTop = smTerminalContainer.scrollHeight;
+      }
+    }
+
+    function clearSerialLog() {
+      if (smTerminalBody) smTerminalBody.innerHTML = '';
+      serialLineCounter = 0;
+      if (smLineCount) smLineCount.textContent = '0 eventos';
+      appendSerialLog('SYS', 'Terminal limpo pelo usuário.', 'sys');
+    }
+
+    async function copySerialLog() {
+      if (!smTerminalBody) return;
+      let fullText = '';
+      smTerminalBody.querySelectorAll('.sm-log-line').forEach(line => {
+        fullText += line.innerText.replace(/\s+/g, ' ').trim() + '\n';
+      });
+      try {
+        await navigator.clipboard.writeText(fullText);
+        if (smCopyText) {
+          smCopyText.textContent = 'Copiado! ✓';
+          setTimeout(() => { if (smCopyText) smCopyText.textContent = 'Copiar'; }, 2000);
+        }
+      } catch (err) {
+        console.warn('Falha ao copiar:', err);
+      }
+    }
+
+    // Processamento de Pacotes de Áudio Recebidos do ESP32
+    function handleIncomingAudioPacket(rawData) {
+      if (!rawData) return;
+      try {
+        let parsed = null;
+        if (typeof rawData === 'string' && rawData.startsWith('{')) {
+          parsed = JSON.parse(rawData);
+        }
+
+        if (parsed) {
+          const rawRms = Number(parsed.rms || 0);
+          const rawLevel = Number(parsed.level || 0);
+          const rmsL = Number(parsed.rmsL || rawRms);
+          const rmsR = Number(parsed.rmsR || rawRms);
+
+          audioRms = rawRms;
+
+          // Atualiza HUD
+          if (smHudRms) smHudRms.textContent = rawRms.toFixed(1);
+          if (smVuBarFill) smVuBarFill.style.width = `${Math.min(100, rawLevel)}%`;
+
+          let stateLabel = 'Silêncio';
+          if (rawRms >= 1150) {
+            stateLabel = '🎙️ Fala Detectada!';
+            if (smHudState) smHudState.style.color = '#D7C7A3';
+          } else if (rawRms >= 620) {
+            stateLabel = '🔊 Sustentação / Ruído';
+            if (smHudState) smHudState.style.color = '#7A9A72';
+          } else {
+            if (smHudState) smHudState.style.color = '#9BA69A';
+          }
+          if (smHudState) smHudState.textContent = stateLabel;
+
+          // Barra ASCII
+          const barLen = 12;
+          const filled = Math.min(barLen, Math.round((rawLevel / 100) * barLen));
+          const asciiBar = '[' + '█'.repeat(filled) + '░'.repeat(barLen - filled) + ']';
+
+          const logMsg = `RMS: <b>${rawRms.toFixed(1)}</b> (L:${rmsL.toFixed(1)} | R:${rmsR.toFixed(1)}) | Vol: ${rawLevel}% <span class="sm-log-bar">${asciiBar}</span> ${stateLabel}`;
+          appendSerialLog('MIC', logMsg, 'mic', true);
+        }
+      } catch (e) {}
+    }
 
     // Inicialização do Tema e Relógio
     function initThemeAndClock() {
-      // Aplica tema
       document.documentElement.setAttribute('data-theme', state.theme);
       updateThemeButtons();
-
-      // Aplica modo viewport
       applyViewportMode(state.viewport);
 
-      // Aplica nome de usuário
       const nameEl = document.getElementById('greeting-username');
       if (nameEl) nameEl.textContent = state.userName;
+      const cfgNameInput = document.getElementById('cfg-user-name-input');
+      if (cfgNameInput) cfgNameInput.value = state.userName;
+      const cfgIpInput = document.getElementById('cfg-esp-ip-input');
+      if (cfgIpInput) cfgIpInput.value = state.espIp;
 
-      // Inicia relógio em tempo real
       updateClock();
       setInterval(updateClock, 1000);
-
-      // Inicia visualizador canvas
       initVisualizer();
-
-      // Conecta ao stream SSE de eventos do ESP32
       connectSerialStream();
+      connectEspWebSocket();
+
+      appendSerialLog('SYS', 'Monitor Serial Inicializado — Carregando telemetria...', 'sys');
+      appendSerialLog('HW', `ESP32 Clássico detectado na porta COM8 · IP: ${state.espIp}`, 'sys');
     }
 
-    // Atualiza relógio e saudações conforme o horário
     function updateClock() {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
@@ -1358,7 +1812,6 @@
       const clockEl = document.getElementById('live-clock');
       if (clockEl) clockEl.textContent = `${hours}:${minutes}`;
 
-      // Saudação contextual
       const h = now.getHours();
       let greeting = 'Bom dia,';
       if (h >= 12 && h < 18) greeting = 'Boa tarde,';
@@ -1367,7 +1820,6 @@
       const salutationEl = document.getElementById('greeting-salutation');
       if (salutationEl) salutationEl.textContent = greeting;
 
-      // Formata data do card
       const dias = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
       const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
       const dateLabel = `${dias[now.getDay()]}, ${now.getDate()} ${meses[now.getMonth()]}`;
@@ -1375,7 +1827,6 @@
       if (dateEl) dateEl.textContent = dateLabel;
     }
 
-    // Alternador de Tema Dia / Noite
     function switchThemeToggle() {
       state.theme = state.theme === 'day' ? 'night' : 'day';
       localStorage.setItem('eva_theme', state.theme);
@@ -1417,7 +1868,6 @@
       }
     }
 
-    // Alternador de Viewport (Modo Celular vs Desktop Expandido)
     function toggleViewportMode() {
       state.viewport = state.viewport === 'desktop' ? 'mobile' : 'desktop';
       localStorage.setItem('eva_viewport', state.viewport);
@@ -1452,20 +1902,32 @@
       }
     }
 
-    // Edição do Nome do Usuário
     function editUserName() {
       const current = state.userName;
       const novo = prompt('Como a EVA deve te chamar?', current);
       if (novo && novo.trim().length > 0) {
-        state.userName = novo.trim();
-        localStorage.setItem('eva_user_name', state.userName);
-        document.getElementById('greeting-username').textContent = state.userName;
+        updateUserNameFromInput(novo.trim());
       }
     }
 
-    // =========================================================================
-    // VISUALIZADOR EM CANVAS
-    // =========================================================================
+    function updateUserNameFromInput(val) {
+      state.userName = val;
+      localStorage.setItem('eva_user_name', val);
+      document.getElementById('greeting-username').textContent = val;
+      const inp = document.getElementById('cfg-user-name-input');
+      if (inp) inp.value = val;
+    }
+
+    function updateEspIp(val) {
+      if (val && val.trim()) {
+        state.espIp = val.trim();
+        localStorage.setItem('eva_esp_ip', state.espIp);
+        appendSerialLog('CFG', `IP do ESP32 alterado para: ${state.espIp}`, 'sys');
+        reconnectESP32();
+      }
+    }
+
+    // Visualizador de Onda em Canvas
     let audioRms = 0;
     function initVisualizer() {
       const canvas = document.getElementById('visualizer-canvas');
@@ -1505,8 +1967,47 @@
     }
 
     // =========================================================================
-    // CONEXÃO COM O BACKEND & ESP32 VIA SERVER-SENT EVENTS (/api/serial/stream)
+    // CONEXÃO COM O BACKEND & ESP32 VIA WEBSOCKET E SSE
     // =========================================================================
+    let espWs = null;
+    function connectEspWebSocket() {
+      if (espWs) {
+        try { espWs.close(); } catch(e) {}
+      }
+
+      try {
+        const url = `ws://${state.espIp}/ws`;
+        espWs = new WebSocket(url);
+
+        espWs.onopen = () => {
+          updateHardwareStatus(true, state.espIp);
+          appendSerialLog('WS', `Conectado diretamente ao ESP32 em ${url}`, 'sys');
+        };
+
+        espWs.onmessage = (event) => {
+          if (typeof event.data === 'string') {
+            handleIncomingAudioPacket(event.data);
+          }
+        };
+
+        espWs.onclose = () => {
+          updateHardwareStatus(false);
+          // Reconecta em 4 segundos
+          setTimeout(connectEspWebSocket, 4000);
+        };
+
+        espWs.onerror = () => {};
+      } catch (err) {
+        console.warn('Erro WS ESP32:', err);
+      }
+    }
+
+    function reconnectESP32() {
+      appendSerialLog('SYS', 'Reconectando WebSocket e SSE ao ESP32...', 'sys');
+      connectEspWebSocket();
+      connectSerialStream();
+    }
+
     function connectSerialStream() {
       const evtSource = new EventSource('/api/serial/stream');
 
@@ -1521,6 +2022,7 @@
           if (data.type === 'voice_status') {
             const tagEl = document.getElementById('voice-state-tag');
             if (tagEl) tagEl.textContent = data.message || 'Ativa';
+            appendSerialLog('VAD', data.message || 'Status alterado', 'vad');
           }
 
           if (data.type === 'audio_sentence_chunk') {
@@ -1529,10 +2031,13 @@
 
           if (data.type === 'interrupt') {
             showBargeInAlert(data.interruptedPrompt);
+            appendSerialLog('VAD', `⚡ Interrupção de fala (Barge-In) acionada!`, 'err');
           }
 
           if (data.type === 'voice_interaction') {
             appendConversationTurn(data.userInputText, data.reply);
+            appendSerialLog('STT', `Fala transcrita: "${data.userInputText}"`, 'vad');
+            appendSerialLog('LLM', `Resposta da EVA: "${data.reply}"`, 'sys');
           }
         } catch (e) {}
       };
@@ -1542,20 +2047,29 @@
       };
     }
 
-    function updateHardwareStatus(connected, ip = 'COM8') {
+    function updateHardwareStatus(connected, ip = state.espIp) {
       state.isEsp32Connected = connected;
       const dot = document.getElementById('hw-dot');
       const label = document.getElementById('hw-badge-label');
+      const cfgTag = document.getElementById('cfg-esp-status-tag');
+      const portTag = document.getElementById('sm-port-tag');
+      const pulseDot = document.getElementById('sm-pulse-dot');
+
       if (connected) {
         if (dot) dot.className = 'hw-badge-dot';
         if (label) label.textContent = `ESP32: Online (${ip})`;
+        if (cfgTag) cfgTag.textContent = `ESP32: Online (${ip})`;
+        if (portTag) portTag.textContent = `COM8 · ws://${ip}/ws (ONLINE)`;
+        if (pulseDot) pulseDot.className = 'sm-pulse-dot online';
       } else {
         if (dot) dot.className = 'hw-badge-dot offline';
         if (label) label.textContent = 'ESP32: COM8 Pronto';
+        if (cfgTag) cfgTag.textContent = 'ESP32: Desconectado';
+        if (portTag) portTag.textContent = `COM8 · ws://${ip}/ws (DESCONECTADO)`;
+        if (pulseDot) pulseDot.className = 'sm-pulse-dot offline';
       }
     }
 
-    // Alerta de Interrupção de Fala (Barge-In)
     function showBargeInAlert(prevPrompt) {
       const banner = document.getElementById('barge-in-banner');
       const bannerText = document.getElementById('barge-in-text');
@@ -1564,12 +2078,8 @@
         banner.classList.add('visible');
         setTimeout(() => banner.classList.remove('visible'), 4000);
       }
-      stopAudioPlayback();
     }
 
-    // =========================================================================
-    // EXECUÇÃO DE VOZ E GRAVAÇÃO DE ÁUDIO NO NAVEGADOR
-    // =========================================================================
     async function handleOrbClick() {
       toggleVoiceRecording();
     }
@@ -1601,6 +2111,7 @@
         state.mediaRecorder.start();
         state.isRecording = true;
         updateVoiceUI(true);
+        appendSerialLog('MIC', 'Gravação de voz local iniciada via navegador.', 'mic');
       } catch (err) {
         alert('Microfone não acessível: ' + err.message);
       }
@@ -1659,7 +2170,6 @@
       }
     }
 
-    // Envio de texto / comandos rápidos
     function handleInputKey(e) {
       if (e.key === 'Enter') {
         const input = document.getElementById('chat-input');
@@ -1676,6 +2186,7 @@
 
     async function sendTextMessage(text) {
       appendConversationTurn(text, '...');
+      appendSerialLog('USER', `Comando de texto enviado: "${text}"`, 'sys');
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -1685,8 +2196,8 @@
         const data = await res.json();
         if (data.reply) {
           appendConversationTurn(text, data.reply);
-          // Síntese de voz
           playTtsForText(data.reply);
+          appendSerialLog('EVA', `Resposta gerada: "${data.reply}"`, 'sys');
         }
       } catch (err) {
         console.error(err);
@@ -1735,14 +2246,10 @@
       if (tel.ttsDurationMs != null) document.getElementById('lat-t6').textContent = `${tel.ttsDurationMs} ms`;
     }
 
-    // =========================================================================
-    // CASA INTELIGENTE & CONTROLE DE DISPOSITIVOS
-    // =========================================================================
     function toggleDevice(devKey) {
       state.devices[devKey] = !state.devices[devKey];
       const isNowOn = state.devices[devKey];
 
-      // Mapeamento visual
       if (devKey === 'light') {
         document.getElementById('tile-luz-sala').classList.toggle('on', isNowOn);
         logBtCommand(isNowOn ? 'LIGAR_DISPOSITIVO:sala:luz' : 'DESLIGAR_DISPOSITIVO:sala:luz');
@@ -1764,15 +2271,15 @@
       if (consoleEl) {
         const time = new Date().toLocaleTimeString();
         const row = document.createElement('div');
-        row.textContent = `[BT ${time}] 📤 CMD:${cmd}`;
+        row.className = 'sm-log-line';
+        row.innerHTML = `<span class="sm-log-time">[${time}]</span> <span class="sm-tag-pill bt">[BT]</span> <span class="sm-log-text">CMD:${cmd}</span>`;
         consoleEl.appendChild(row);
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+        const container = document.getElementById('bt-console-container');
+        if (container) container.scrollTop = container.scrollHeight;
       }
+      appendSerialLog('BT', `Comando despachado: ${cmd}`, 'bt');
     }
 
-    // =========================================================================
-    // MODAL DE MÓDULOS (SAÚDE, CASA INTELIGENTE, ROTINAS)
-    // =========================================================================
     function openModuleModal(type) {
       const modal = document.getElementById('module-modal');
       const title = document.getElementById('modal-title');
@@ -1790,10 +2297,6 @@
             <div style="background: var(--bg-card); padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
               <span>💊 Vitaminas & Medicamentos</span>
               <span>12:30 (Em dia)</span>
-            </div>
-            <div style="background: var(--bg-card); padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
-              <span>😴 Sono & Descanso</span>
-              <span>7h 45m registrado</span>
             </div>
           </div>
         `;
@@ -1813,7 +2316,6 @@
           <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 14px;">Cenas configuradas na EVA para executar múltiplos comandos via voz ou horário.</p>
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Bom Dia')">☀️ <strong>Rotina Bom Dia</strong> — Previsão, luzes 100% e agenda</button>
-            <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Cinema')">🎬 <strong>Modo Cinema</strong> — Luzes suaves e mudo no speaker</button>
             <button class="chip-btn" style="padding: 12px; text-align: left;" onclick="sendTextMessage('Executar rotina Boa Noite')">🌙 <strong>Rotina Boa Noite</strong> — Tranca portas e apaga luzes</button>
           </div>
         `;
@@ -1826,6 +2328,15 @@
       document.getElementById('module-modal')?.classList.remove('open');
     }
 
+    // Modal de Configurações & Monitor Serial
+    function openConfigModal() {
+      document.getElementById('config-modal')?.classList.add('open');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('config-modal')?.classList.remove('open');
+    }
+
     function selectNavTab(tab) {
       document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
@@ -1833,11 +2344,10 @@
       if (tab === 'atividade') {
         openModuleModal('rotinas');
       } else if (tab === 'config') {
-        editUserName();
+        openConfigModal();
       }
     }
 
-    // Inicialização ao carregar a página
     window.addEventListener('DOMContentLoaded', initThemeAndClock);
   </script>
 </body>

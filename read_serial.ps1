@@ -1,9 +1,9 @@
-$port = New-Object System.IO.Ports.SerialPort "COM7", 115200, "None", 8, "One"
+$port = New-Object System.IO.Ports.SerialPort "COM8", 115200, "None", 8, "One"
 $port.ReadTimeout = 4000
 try {
     $port.Open()
     $start = Get-Date
-    while ((Get-Date) - $start -lt [TimeSpan]::FromSeconds(14)) {
+    while ((Get-Date) - $start -lt [TimeSpan]::FromSeconds(4)) {
         if ($port.BytesToRead -gt 0) {
             Write-Host $port.ReadExisting() -NoNewline
         }

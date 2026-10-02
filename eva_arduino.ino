@@ -51,15 +51,16 @@ const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
 #define I2S_SAMPLE_RATE     16000
 #define BUFFER_PAIRS        256 // 256 pares (512 samples) = 16ms por leitura
 
-// Gravação de voz: até 3.5 segundos a 16kHz 16-bit mono
-#define MAX_RECORD_SECONDS  3.5f
-#define MAX_RECORD_SAMPLES  (int)(16000 * MAX_RECORD_SECONDS) // 56.000 amostras
+// Gravação de voz: até 2.0 segundos a 16kHz 16-bit mono (64.044 bytes contíguos)
+#define MAX_RECORD_SECONDS  2.0f
+#define MAX_RECORD_SAMPLES  (int)(16000 * MAX_RECORD_SECONDS) // 32.000 amostras
 #define WAV_HEADER_SIZE     44
-#define MAX_RECORD_BYTES    (WAV_HEADER_SIZE + MAX_RECORD_SAMPLES * 2) // 112.044 bytes
+#define MAX_RECORD_BYTES    (WAV_HEADER_SIZE + MAX_RECORD_SAMPLES * 2) // 64.044 bytes
 
 WebSocketsServer webSocket = WebSocketsServer(80);
-int32_t audioBuffer[BUFFER_PAIRS * 2]; // Captura Stereo (Left mic)
+int32_t audioBuffer[BUFFER_PAIRS * 2]; // Captura Stereo (Left/Right mic)
 uint8_t* wavBuffer = nullptr;
+uint32_t maxRecordSamples = MAX_RECORD_SAMPLES;
 uint32_t recordedSamples = 0;
 
 enum MicState {
@@ -310,13 +311,10 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // Aloca buffer de áudio WAV para gravação
-  wavBuffer = (uint8_t*)malloc(MAX_RECORD_BYTES);
-  if (wavBuffer != nullptr) {
-    LOG_PRINTF("[MEM] Buffer de voz alocado: %d bytes (%.1f KB)\n", MAX_RECORD_BYTES, MAX_RECORD_BYTES / 1024.0);
-  } else {
-    LOG_PRINTLN("[MEM] ERRO CRÍTICO ao alocar buffer de voz!");
-  }
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  SerialBT.begin(BT_DEVICE_NAME);
+  LOG_PRINTF("[BT] 🔵 Bluetooth Classic Serial iniciado como '%s'.\n", BT_DEVICE_NAME);
+#endif
 
   i2sMicInit();
 
@@ -343,10 +341,22 @@ void setup() {
   webSocket.onEvent(webSocketEvent);
   LOG_PRINTLN("[WebSocket] Servidor escutando na porta 80.");
 
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-  SerialBT.begin(BT_DEVICE_NAME);
-  LOG_PRINTF("[BT] 🔵 Bluetooth Classic Serial iniciado como '%s'. Pronto para pareamento.\n", BT_DEVICE_NAME);
-#endif
+  // Aloca buffer de áudio após Bluetooth e Wi-Fi estarem ativos para evitar falta de memória na stack do BT
+  size_t freeHeap = esp_get_free_heap_size();
+  size_t largestFree = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+  LOG_PRINTF("[MEM] Heap livre pós-rede/BT: %u bytes, maior bloco: %u bytes\n", freeHeap, largestFree);
+
+  size_t allocSize = (largestFree > 18432) ? (largestFree - 14336) : 0;
+  if (allocSize > 48000) allocSize = 48000;
+  if (allocSize >= 16000) {
+    wavBuffer = (uint8_t*)malloc(allocSize);
+    if (wavBuffer != nullptr) {
+      maxRecordSamples = (allocSize - WAV_HEADER_SIZE) / sizeof(int16_t);
+      LOG_PRINTF("[MEM] ✅ Buffer de voz alocado com segurança: %d bytes (%.1f KB, max %u amostras)\n", allocSize, allocSize / 1024.0, maxRecordSamples);
+    }
+  } else {
+    LOG_PRINTLN("[MEM] ⚠️ Memória contígua insuficiente para buffer WAV completo. Operando em modo de streaming contínuo.");
+  }
 }
 
 void loop() {
@@ -468,7 +478,7 @@ void loop() {
             if (val < -32768) val = -32768;
             int16_t sample = (int16_t)val;
 
-            if (recordedSamples < MAX_RECORD_SAMPLES) {
+            if (recordedSamples < maxRecordSamples) {
               pcm16[recordedSamples++] = sample;
             }
 
@@ -501,7 +511,7 @@ void loop() {
             silenceFrames = 0;
           }
 
-          if (recordedSamples >= MAX_RECORD_SAMPLES) {
+          if (recordedSamples >= maxRecordSamples) {
             micState = STATE_SENDING;
           }
         }
