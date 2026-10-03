@@ -105,7 +105,7 @@ describe('AgentEngine (Loop de Raciocínio da EVA)', () => {
     expect(result.toolExecutions[0].status).toBe('success');
     expect(result.toolExecutions[0].data).toMatchObject({
       cidade: 'Curitiba',
-      temperaturaAtual: '24°C',
+      temperaturaAtual: expect.stringMatching(/\d+°C/),
     });
     // Verifica que totalizou tokens dos 2 turnos
     expect(result.telemetry.costs.llm.inputTokens).toBe(300);

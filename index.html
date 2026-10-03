@@ -266,7 +266,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .presence-home-title {
@@ -277,28 +277,70 @@
       color: var(--text-primary);
     }
 
-    .presence-celestial-icon {
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.3s ease;
-    }
-
-    .presence-celestial-icon:hover {
-      transform: scale(1.15) rotate(15deg);
-    }
-
-    /* Seção do Relógio com Arco Radiante */
+    /* Seção do Relógio com Arco Radiante & Esfera */
     .clock-stage {
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 6px;
+      padding-top: 14px;
       margin-bottom: 20px;
+    }
+
+    /* O Arco da Aura Celeste (Cúpula Solar / Lunar) */
+    .orb-aura-arc {
+      position: absolute;
+      top: -2px;
+      width: 290px;
+      height: 250px;
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      border-top: 1.5px solid var(--halo-line);
+      background: radial-gradient(ellipse at 50% 15%, var(--halo-glow) 0%, transparent 68%);
+      pointer-events: none;
+      z-index: 1;
+      transition: all 0.45s ease;
+    }
+
+    [data-theme="night"] .orb-aura-arc {
+      border-top: 1.5px solid rgba(110, 150, 205, 0.4);
+      background: radial-gradient(ellipse at 50% 25%, rgba(35, 65, 110, 0.45) 0%, transparent 72%);
+    }
+
+    /* Ícone Celestial (Sol no ápice em Dia / Lua na curva superior em Noite) */
+    .celestial-anchor {
+      position: absolute;
+      z-index: 10;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* No Modo Dia: Sol centralizado exatamente no ápice superior do arco */
+    [data-theme="day"] .celestial-anchor {
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 36px;
+    }
+
+    /* No Modo Noite: Lua elegante na curva superior direita do arco */
+    [data-theme="night"] .celestial-anchor {
+      top: 6px;
+      right: 22px;
+      left: auto;
+      transform: none;
+      width: 32px;
+      height: 32px;
+    }
+
+    .celestial-anchor:hover {
+      transform: scale(1.18);
+    }
+    [data-theme="day"] .celestial-anchor:hover {
+      transform: translateX(-50%) scale(1.18) rotate(20deg);
     }
 
     .presence-clock {
@@ -307,21 +349,12 @@
       font-weight: 300;
       letter-spacing: -1px;
       color: var(--text-primary);
-      margin-bottom: 14px;
+      margin-top: 10px;
+      margin-bottom: 12px;
       line-height: 1;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-    }
-
-    .orb-aura-arc {
-      position: absolute;
-      top: 36px;
-      width: 250px;
-      height: 160px;
-      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-      border-top: 1.5px solid var(--halo-line);
-      background: radial-gradient(ellipse at 50% 100%, var(--halo-glow) 0%, transparent 72%);
-      pointer-events: none;
-      z-index: 1;
+      position: relative;
+      z-index: 2;
     }
 
     /* A ESFERA 3D TÁTIL CROMADA */
@@ -707,6 +740,28 @@
 
     .barge-in-banner.visible {
       display: flex;
+    }
+
+    .audio-unlock-banner {
+      background: rgba(125, 182, 117, 0.16);
+      border: 1px solid rgba(125, 182, 117, 0.45);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #3b6b35;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    .audio-unlock-banner:hover {
+      background: rgba(125, 182, 117, 0.28);
     }
 
     .chat-prompt-row {
@@ -1215,10 +1270,16 @@
         <span id="theme-btn-text">Dia</span>
       </button>
 
-      <!-- Badge de Hardware ESP32 & Bluetooth -->
+      <!-- Badge de Hardware ESP32 -->
       <div class="hw-badge-pill" id="hw-badge-pill" onclick="openConfigModal()" title="Clique para abrir Diagnóstico e Logs">
-        <span class="hw-badge-dot" id="hw-dot"></span>
+        <span class="hw-badge-dot offline" id="hw-dot"></span>
         <span id="hw-badge-label">ESP32: Conectando...</span>
+      </div>
+
+      <!-- Badge de Caixa de Som Bluetooth -->
+      <div class="hw-badge-pill" id="bt-badge-pill" onclick="openConfigModal()" title="Status da Caixa de Som Bluetooth">
+        <span class="hw-badge-dot offline" id="bt-dot"></span>
+        <span id="bt-badge-label">Caixa BT: Procurando...</span>
       </div>
     </div>
   </header>
@@ -1233,20 +1294,22 @@
       <div class="mobile-frame" id="presence-mobile-frame">
         <div class="presence-card">
 
-          <!-- TOPO: Título Home + Ícone Solar/Lunar -->
+          <!-- TOPO: Título Home -->
           <div class="presence-top-row">
             <h2 class="presence-home-title">Home</h2>
-            <div class="presence-celestial-icon" id="celestial-icon" onclick="switchThemeToggle()" title="Alternar Sol / Lua">
-              <!-- Ícone dinâmico inserido via JS -->
-            </div>
           </div>
 
-          <!-- RELÓGIO & ESFERA 3D TÁTIL -->
+          <!-- RELÓGIO & ESFERA 3D TÁTIL COM ARCO CELESTE -->
           <div class="clock-stage">
-            <div class="presence-clock" id="live-clock">12:30</div>
-
             <!-- Arco da Aura / Halo -->
             <div class="orb-aura-arc"></div>
+
+            <!-- Ícone Solar (no ápice) ou Lunar (na curva) posicionado diretamente no arco -->
+            <div class="celestial-anchor" id="celestial-icon" onclick="switchThemeToggle()" title="Clique para alternar Modo Dia / Noite">
+              <!-- Ícone dinâmico inserido via JS -->
+            </div>
+
+            <div class="presence-clock" id="live-clock">12:30</div>
 
             <!-- Esfera com Borda Cromada -->
             <div class="orb-wrapper" id="orb-trigger" onclick="handleOrbClick()" title="Clique para conversar com a EVA">
@@ -1263,65 +1326,33 @@
             <h3 class="greeting-username" id="greeting-username" onclick="editUserName()" title="Clique para editar o seu nome">[Nome do Usuário]</h3>
           </div>
 
-          <!-- WIDGET DUPLO: CLIMA & AGENDA -->
+          <!-- WIDGET DUPLO: CLIMA & AGENDA (POVOADO VIA OPEN-METEO EM TEMPO REAL) -->
           <div class="weather-agenda-card">
-            <div class="weather-side">
-              <span class="weather-temp">24°C</span>
-              <svg class="weather-icon-peek" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-                <path d="M12 3v2M18.36 5.64l-1.42 1.42M21 12h-2"/>
-              </svg>
+            <div class="weather-side" onclick="promptChangeCity()" style="cursor: pointer;" title="Clique para alterar a cidade">
+              <span class="weather-temp" id="widget-weather-temp">16°C</span>
+              <div id="widget-weather-icon-container" class="weather-icon-peek">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                  <path d="M12 3v2M18.36 5.64l-1.42 1.42M21 12h-2"/>
+                </svg>
+              </div>
             </div>
             <div class="weather-divider"></div>
-            <div class="agenda-side">
-              <span class="agenda-date" id="agenda-date-label">QUI, 12 OUT</span>
-              <span class="agenda-event" id="agenda-event-label">Almoço com a família</span>
+            <div class="agenda-side" onclick="promptChangeCity()" style="cursor: pointer;" title="Clique para alterar a cidade de referência">
+              <span class="agenda-date" id="agenda-date-label">SÁB, 03 OUT</span>
+              <span class="agenda-event" id="agenda-city-label">Juiz de Fora, MG · Sem chuva</span>
             </div>
           </div>
 
-          <!-- CARROSSEL DE PREVISÃO SEMANAL (5 DIAS) -->
-          <div class="forecast-strip">
+          <!-- CARROSSEL DE PREVISÃO SEMANAL (POVOADO PELO OPEN-METEO) -->
+          <div class="forecast-strip" id="forecast-strip-container">
             <div class="forecast-pill active">
-              <span class="forecast-day">QUI</span>
+              <span class="forecast-day">HOJE</span>
               <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <circle cx="12" cy="12" r="4"/>
                 <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
               </svg>
-              <span class="forecast-temp">24°/16°</span>
-            </div>
-
-            <div class="forecast-pill">
-              <span class="forecast-day">SEX</span>
-              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-              </svg>
-              <span class="forecast-temp">24°/16°</span>
-            </div>
-
-            <div class="forecast-pill">
-              <span class="forecast-day">SÁB</span>
-              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-                <path d="M16 5l1 1M19 8l1-1"/>
-              </svg>
-              <span class="forecast-temp">24°/16°</span>
-            </div>
-
-            <div class="forecast-pill">
-              <span class="forecast-day">DOM</span>
-              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-              </svg>
-              <span class="forecast-temp">24°/16°</span>
-            </div>
-
-            <div class="forecast-pill">
-              <span class="forecast-day">SEG</span>
-              <svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-                <path d="M8 21v1M12 21v1M16 21v1"/>
-              </svg>
-              <span class="forecast-temp">24°/16°</span>
+              <span class="forecast-temp">--°/--°</span>
             </div>
           </div>
 
@@ -1392,6 +1423,12 @@
           <div class="barge-in-banner" id="barge-in-banner">
             <span>⚡</span>
             <span id="barge-in-text">Interrupção detectada! Reformulando resposta...</span>
+          </div>
+
+          <!-- Banner de Desbloqueio de Áudio do Navegador -->
+          <div class="audio-unlock-banner" id="audio-unlock-banner" onclick="unlockAudioContext()">
+            <span>🔊</span>
+            <span>Clique aqui para ativar o áudio da EVA no navegador</span>
           </div>
 
           <!-- Caixa de Transcrição e Resposta da EVA -->
@@ -1539,9 +1576,10 @@
   <div class="modal-overlay" id="config-modal" onclick="closeConfigModal(event)">
     <div class="modal-sheet" style="max-width: 780px;" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <h4 class="modal-title">Configurações & Diagnóstico de Hardware</h4>
           <span class="sm-tag" id="cfg-esp-status-tag">ESP32: 192.168.100.177</span>
+          <span class="sm-tag" id="cfg-bt-status-tag">Caixa BT: Procurando...</span>
         </div>
         <button class="modal-close-btn" onclick="closeConfigModal()">✕</button>
       </div>
@@ -1563,6 +1601,9 @@
             </button>
             <button class="sm-btn" id="sm-btn-copy" onclick="copySerialLog()" title="Copiar logs para área de transferência">
               <span>📋</span> <span id="sm-copy-text">Copiar</span>
+            </button>
+            <button class="sm-btn" onclick="triggerBtConnect()" title="Solicitar conexão direta com a caixa de som Bluetooth">
+              <span>🔊</span> <span>Conectar BT</span>
             </button>
             <button class="sm-btn" onclick="reconnectESP32()" title="Forçar reconexão WebSocket com o ESP32">
               <span>🔄</span> <span>Reconectar</span>
@@ -1619,7 +1660,7 @@
       </section>
 
       <!-- CONFIGURAÇÕES DE SISTEMA -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px;">
         <div style="background: var(--bg-card); padding: 14px; border-radius: 16px;">
           <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Nome de Exibição:</label>
           <input type="text" id="cfg-user-name-input" class="chat-text-field" style="width: 100%; margin-top: 6px;" value="Rafael" onchange="updateUserNameFromInput(this.value)">
@@ -1630,6 +1671,43 @@
           <input type="text" id="cfg-esp-ip-input" class="chat-text-field" style="width: 100%; margin-top: 6px;" value="192.168.100.177" onchange="updateEspIp(this.value)">
         </div>
       </div>
+
+      <!-- FILTRO DE PALAVRA DE ATIVAÇÃO ("EVA") -->
+      <div style="background: var(--bg-card); padding: 14px 18px; border-radius: 16px; margin-top: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-subtle);">
+        <div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>🛡️</span> <span>Filtrar Conversas do Ambiente (Exigir "Eva")</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+            Ignora TV, vídeos e conversas da sala que não forem dirigidas à EVA ("Eva, ..."). Permite diálogo contínuo por 12s.
+          </div>
+        </div>
+        <input type="checkbox" id="cfg-wake-word-toggle" checked onchange="toggleWakeWordRequirement(this.checked)" style="transform: scale(1.4); cursor: pointer; accent-color: var(--accent-sage);">
+      </div>
+
+      <!-- SEÇÃO DO HISTÓRICO DE CONVERSAÇÃO & DIAGNÓSTICO -->
+      <section class="serial-monitor-card" style="margin-top: 14px; background: rgba(0,0,0,0.18);">
+        <div class="sm-header">
+          <div class="sm-title-group">
+            <span style="font-size: 15px;">💬</span>
+            <span class="sm-title">HISTÓRICO DA CONVERSAÇÃO (LOG DE INTERAÇÕES)</span>
+            <span class="sm-tag" id="conv-log-count">0 diálogos</span>
+          </div>
+          <div class="sm-controls">
+            <button class="sm-btn" id="btn-copy-conversation" onclick="copyConversationHistory()" title="Copiar interações para colar no chat da IA">
+              <span>📋</span> <span id="copy-conv-text">Copiar para Chat</span>
+            </button>
+            <button class="sm-btn" onclick="clearConversationHistoryUi()" title="Limpar histórico">
+              <span>🗑</span> <span>Limpar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista Scrollável de Interações -->
+        <div id="conv-history-list" style="max-height: 220px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 12px;">
+          <div style="color: var(--text-muted); text-align: center; padding: 16px;">Nenhum diálogo registrado ainda. Fale com a EVA pelo microfone do ESP32!</div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1646,6 +1724,8 @@
       isRecording: false,
       isSpeaking: false,
       isEsp32Connected: false,
+      isBtConnected: false,
+      btDeviceName: 'BT-SPEAKER',
       devices: {
         light: true,
         ac: false,
@@ -1770,16 +1850,22 @@
           const st = parsed.st || 'idle';
 
           audioRms = rawRms;
+          if (!state.isEsp32Connected) {
+            updateHardwareStatus(true);
+          }
+          if (parsed.bt !== undefined) {
+            updateBluetoothStatus(!!parsed.bt);
+          }
 
           // Atualiza HUD do Monitor Serial
           if (smHudRms) smHudRms.textContent = rawRms.toFixed(1);
           if (smVuBarFill) smVuBarFill.style.width = `${Math.min(100, Math.max(0, rawLevel))}%`;
 
           let stateLabel = 'Silêncio';
-          if (st === 'rec' || rawRms >= 1150) {
+          if (st === 'rec' || rawRms >= 780) {
             stateLabel = '🎙️ Fala Detectada!';
             if (smHudState) smHudState.style.color = '#D7C7A3';
-          } else if (rawRms >= 620) {
+          } else if (rawRms >= 550) {
             stateLabel = '🔊 Sustentação / Ruído';
             if (smHudState) smHudState.style.color = '#7A9A72';
           } else {
@@ -1818,7 +1904,7 @@
         return;
       }
 
-      if (st === 'rec' || rms >= 1150) {
+      if (st === 'rec' || rms >= 780) {
         orbEl.classList.add('listening');
         orbEl.classList.remove('speaking', 'thinking');
         const dynScale = 1.05 + Math.min(0.25, (rms - 600) / 2400);
@@ -1828,7 +1914,7 @@
           tagEl.style.color = 'var(--text-primary)';
           tagEl.style.borderColor = 'var(--accent-sage)';
         }
-      } else if (rms >= 620) {
+      } else if (rms >= 550) {
         const dynScale = 1.0 + Math.min(0.08, (rms - 500) / 3500);
         orbEl.style.transform = `scale(${dynScale.toFixed(3)})`;
         orbEl.classList.remove('speaking', 'thinking');
@@ -1858,8 +1944,11 @@
 
       updateClock();
       setInterval(updateClock, 1000);
+      loadOpenMeteoWeather();
+      setInterval(() => loadOpenMeteoWeather(), 15 * 60 * 1000);
       initVisualizer();
       connectSerialStream();
+      loadConversationHistory();
 
       appendSerialLog('SYS', 'Monitor Serial Inicializado — Carregando telemetria...', 'sys');
       appendSerialLog('HW', `ESP32 Clássico detectado na porta COM8 · IP: ${state.espIp}`, 'sys');
@@ -1902,29 +1991,102 @@
 
       if (isNight) {
         if (iconEl) {
-          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #A0B2C9;">
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width: 28px; height: 28px; color: #B4C6DA;">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            <circle cx="19" cy="5" r="1" fill="currentColor"/>
           </svg>`;
         }
         if (themeBtnIcon) themeBtnIcon.textContent = '🌙';
         if (themeBtnText) themeBtnText.textContent = 'Noite';
       } else {
         if (iconEl) {
-          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #7A9A72;">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width: 32px; height: 32px; color: #BDB088;">
+            <circle cx="12" cy="12" r="4.5"/>
+            <line x1="12" y1="2" x2="12" y2="4.5"/>
+            <line x1="12" y1="19.5" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="6.7" y2="6.7"/>
+            <line x1="17.3" y1="17.3" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="4.5" y2="12"/>
+            <line x1="19.5" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="6.7" y2="17.3"/>
+            <line x1="17.3" y1="6.7" x2="19.07" y2="4.93"/>
           </svg>`;
         }
         if (themeBtnIcon) themeBtnIcon.textContent = '☀️';
         if (themeBtnText) themeBtnText.textContent = 'Dia';
+      }
+    }
+
+    function getForecastSvgIcon(code) {
+      if (code === 0 || code === 1) {
+        return `<svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>`;
+      }
+      if (code === 2) {
+        return `<svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          <path d="M12 3v2M18.36 5.64l-1.42 1.42M21 12h-2"/>
+        </svg>`;
+      }
+      if (code >= 51 && code <= 82) {
+        return `<svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          <path d="M8 21v1M12 21v1M16 21v1"/>
+        </svg>`;
+      }
+      return `<svg class="forecast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+      </svg>`;
+    }
+
+    async function loadOpenMeteoWeather(city) {
+      const targetCity = city || localStorage.getItem('eva_user_city') || 'Juiz de Fora';
+      try {
+        const res = await fetch(`/api/weather?city=${encodeURIComponent(targetCity)}`);
+        const data = await res.json();
+        if (data.success) {
+          renderRealWeatherData(data);
+        }
+      } catch (err) {
+        console.warn('[Open-Meteo Load Error]', err);
+      }
+    }
+
+    function renderRealWeatherData(data) {
+      const tempEl = document.getElementById('widget-weather-temp');
+      if (tempEl) tempEl.textContent = data.temperature;
+
+      const iconContainer = document.getElementById('widget-weather-icon-container');
+      if (iconContainer) {
+        iconContainer.innerHTML = getForecastSvgIcon(data.weatherCode);
+      }
+
+      const cityLabel = document.getElementById('agenda-city-label');
+      if (cityLabel) {
+        cityLabel.textContent = `${data.city}, ${data.state ? data.state.substring(0, 2).toUpperCase() : 'BR'}${data.rainTodayMm > 0 ? ` · ${data.rainTodayMm}mm chuva` : ' · Sem chuva'}`;
+      }
+
+      const strip = document.getElementById('forecast-strip-container');
+      if (strip && Array.isArray(data.forecast) && data.forecast.length > 0) {
+        strip.innerHTML = data.forecast.map((f, i) => `
+          <div class="forecast-pill ${i === 0 ? 'active' : ''}">
+            <span class="forecast-day">${f.day}</span>
+            ${getForecastSvgIcon(f.weatherCode)}
+            <span class="forecast-temp">${f.tempRange}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    function promptChangeCity() {
+      const currentCity = localStorage.getItem('eva_user_city') || 'Juiz de Fora';
+      const newCity = prompt('Qual cidade você deseja configurar para o clima da EVA?', currentCity);
+      if (newCity && newCity.trim() && newCity.trim() !== currentCity) {
+        const clean = newCity.trim();
+        localStorage.setItem('eva_user_city', clean);
+        loadOpenMeteoWeather(clean);
+        appendSerialLog('CFG', `Localização alterada para: ${clean}`, 'sys');
       }
     }
 
@@ -2010,13 +2172,13 @@
         ctx.lineCap = 'round';
 
         ctx.beginPath();
-        // Áudio RMS do ESP32 varia de ~400 a 2500+
-        const hasSound = (state.isRecording || state.isSpeaking || audioRms > 620);
+        // Áudio RMS do ESP32 varia de ~300 (silêncio) a 2000+ (fala)
+        const hasSound = (state.isRecording || state.isSpeaking || audioRms > 550);
         let amplitude = 4;
         if (state.isSpeaking) {
           amplitude = 22;
-        } else if (audioRms > 620) {
-          amplitude = Math.min(36, Math.max(6, (audioRms - 500) / 35));
+        } else if (audioRms > 550) {
+          amplitude = Math.min(36, Math.max(6, (audioRms - 400) / 30));
         }
         const freq = hasSound ? 0.035 : 0.015;
 
@@ -2076,6 +2238,21 @@
             return;
           }
 
+          // 2.5 Status da Caixa de Som Bluetooth (ESP32 A2DP)
+          if (data.type === 'bt_state') {
+            updateBluetoothStatus(data.connected, data.deviceName || data.target || 'BT-SPEAKER');
+            return;
+          }
+
+          // 2.6 Escaneamento de Dispositivos Bluetooth (Inquiry)
+          if (data.type === 'bt_scan') {
+            const devName = data.name || '<desconhecido>';
+            const devMac = data.mac || '';
+            const devRssi = data.rssi || 0;
+            appendSerialLog('BT-SCAN', `📡 Dispositivo detectado: "${devName}" (${devMac}) · Sinal: ${devRssi} dBm`, 'bt');
+            return;
+          }
+
           // 3. Status de Voz do Pipeline
           if (data.type === 'voice_status') {
             handleVoiceStateChange(data.state, data.message);
@@ -2084,6 +2261,11 @@
 
           // 4. Áudio sintetizado em chunks
           if (data.type === 'audio_sentence_chunk') {
+            hasReceivedStreamedChunks = true;
+            if (data.interactionId && data.interactionId !== window._currentStreamingInteractionId) {
+              interruptPlayback();
+              window._currentStreamingInteractionId = data.interactionId;
+            }
             enqueueAudioChunk(data.data);
             return;
           }
@@ -2102,7 +2284,16 @@
             appendSerialLog('STT', `Fala transcrita: "${data.userInputText}"`, 'vad');
             appendSerialLog('LLM', `Resposta da EVA: "${data.reply}"`, 'sys');
             if (data.telemetry) updateTelemetryBars(data.telemetry);
-            playVoiceResponse(data.reply);
+            if (!hasReceivedStreamedChunks) {
+              playVoiceResponse(data.reply);
+            }
+            hasReceivedStreamedChunks = false;
+            return;
+          }
+
+          // 7. Log de conversação e turno registrado
+          if (data.type === 'conversation_turn') {
+            handleConversationTurnEvent(data.entry);
             return;
           }
         } catch (e) {
@@ -2127,14 +2318,61 @@
         if (dot) dot.className = 'hw-badge-dot';
         if (label) label.textContent = `ESP32: Online (${ip})`;
         if (cfgTag) cfgTag.textContent = `ESP32: Online (${ip})`;
-        if (portTag) portTag.textContent = `COM8 · ws://${ip}/ws (ONLINE)`;
+        if (portTag) portTag.textContent = `COM8 · ws://${ip}:81/ws (ONLINE)`;
         if (pulseDot) pulseDot.className = 'sm-pulse-dot online';
       } else {
         if (dot) dot.className = 'hw-badge-dot offline';
         if (label) label.textContent = 'ESP32: Offline';
         if (cfgTag) cfgTag.textContent = 'ESP32: Desconectado';
-        if (portTag) portTag.textContent = `COM8 · ws://${ip}/ws (DESCONECTADO)`;
+        if (portTag) portTag.textContent = `COM8 · ws://${ip}:81/ws (DESCONECTADO)`;
         if (pulseDot) pulseDot.className = 'sm-pulse-dot offline';
+        updateBluetoothStatus(false);
+      }
+    }
+
+    function updateBluetoothStatus(connected, deviceName = 'BT-SPEAKER') {
+      const wasConnected = state.isBtConnected;
+      state.isBtConnected = !!connected;
+      state.btDeviceName = deviceName;
+
+      const dot = document.getElementById('bt-dot');
+      const label = document.getElementById('bt-badge-label');
+      const cfgTag = document.getElementById('cfg-bt-status-tag');
+      const footerInfo = document.getElementById('sm-footer-info');
+
+      if (connected) {
+        if (dot) dot.className = 'hw-badge-dot';
+        if (label) label.textContent = `Caixa BT: Conectada (${deviceName})`;
+        if (cfgTag) cfgTag.textContent = `Caixa BT: Conectada (${deviceName})`;
+        if (footerInfo) footerInfo.textContent = `ESP32 Clássico · SD:32 WS:15 SCK:14 · 115200 baud · BT: ${deviceName} (CONECTADO)`;
+
+        if (!wasConnected) {
+          appendSerialLog('BT', `✅ Caixinha de som Bluetooth CONECTADA com sucesso! [${deviceName}]`, 'sys');
+        }
+      } else {
+        if (dot) dot.className = 'hw-badge-dot offline';
+        if (label) label.textContent = 'Caixa BT: Procurando...';
+        if (cfgTag) cfgTag.textContent = 'Caixa BT: Procurando...';
+        if (footerInfo) footerInfo.textContent = `ESP32 Clássico · SD:32 WS:15 SCK:14 · 115200 baud · BT: Procurando...`;
+
+        if (wasConnected) {
+          appendSerialLog('BT', '⚠️ Caixa de som Bluetooth desconectada.', 'err');
+        }
+      }
+    }
+
+    async function triggerBtConnect() {
+      appendSerialLog('BT', 'Tentando conectar à caixa de som Bluetooth (SoundCore mini2)...', 'bt');
+      try {
+        const res = await fetch('/api/bt/connect', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          appendSerialLog('BT', 'Comando de conexão direta enviado ao hardware ESP32.', 'sys');
+        } else {
+          appendSerialLog('BT', `Aviso ao conectar BT: ${data.error || 'Falha'}`, 'err');
+        }
+      } catch (err) {
+        appendSerialLog('BT', `Erro na chamada /api/bt/connect: ${err.message}`, 'err');
       }
     }
 
@@ -2186,25 +2424,51 @@
       }
     }
 
-    // Gerenciador de Reprodução de Áudio e Sintese de Voz
+    // Gerenciador de Reprodução de Áudio e Síntese de Voz
     let currentAudio = null;
     let audioQueue = [];
     let isPlayingQueue = false;
+    let hasReceivedStreamedChunks = false;
 
     // Desbloqueia reprodução de áudio na primeira interação do usuário na página
     let audioUnlocked = false;
+    function showAudioUnlockBanner() {
+      const banner = document.getElementById('audio-unlock-banner');
+      if (banner && !audioUnlocked) {
+        banner.style.display = 'flex';
+      }
+    }
+
     function unlockAudioContext() {
       if (audioUnlocked) return;
       audioUnlocked = true;
+      const banner = document.getElementById('audio-unlock-banner');
+      if (banner) banner.style.display = 'none';
       try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume().catch(() => {});
+        }
         const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
         silent.play().catch(() => {});
       } catch (e) {}
     }
-    window.addEventListener('click', unlockAudioContext, { once: true });
-    window.addEventListener('touchstart', unlockAudioContext, { once: true });
+    window.addEventListener('click', unlockAudioContext);
+    window.addEventListener('keydown', unlockAudioContext);
+    window.addEventListener('touchstart', unlockAudioContext);
+    window.addEventListener('pointerdown', unlockAudioContext);
+
+    function notifySpeakerState(speaking) {
+      fetch('/api/speaker/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ speaking })
+      }).catch(() => {});
+    }
 
     function interruptPlayback() {
+      hasReceivedStreamedChunks = false;
       if (currentAudio) {
         try {
           currentAudio.pause();
@@ -2215,6 +2479,7 @@
       audioQueue = [];
       isPlayingQueue = false;
       state.isSpeaking = false;
+      notifySpeakerState(false);
       const orbEl = document.getElementById('orb-trigger');
       if (orbEl) {
         orbEl.classList.remove('speaking');
@@ -2241,6 +2506,8 @@
       if (audioQueue.length === 0) {
         isPlayingQueue = false;
         state.isSpeaking = false;
+        currentAudio = null;
+        notifySpeakerState(false);
         const orbEl = document.getElementById('orb-trigger');
         if (orbEl) {
           orbEl.classList.remove('speaking');
@@ -2257,6 +2524,7 @@
 
       isPlayingQueue = true;
       state.isSpeaking = true;
+      notifySpeakerState(true);
       const orbEl = document.getElementById('orb-trigger');
       if (orbEl) {
         orbEl.classList.add('speaking');
@@ -2274,7 +2542,11 @@
 
       audio.onended = () => { playNextInQueue(); };
       audio.onerror = () => { playNextInQueue(); };
-      audio.play().catch(() => { playNextInQueue(); });
+      audio.play().catch((err) => {
+        console.warn('[Audio Playback Blocked/Autoplay]', err);
+        showAudioUnlockBanner();
+        playNextInQueue();
+      });
     }
 
     async function playVoiceResponse(replyText) {
@@ -2283,6 +2555,7 @@
 
       try {
         state.isSpeaking = true;
+        notifySpeakerState(true);
         const orbEl = document.getElementById('orb-trigger');
         if (orbEl) {
           orbEl.classList.add('speaking');
@@ -2302,6 +2575,7 @@
         audio.onended = () => {
           state.isSpeaking = false;
           currentAudio = null;
+          notifySpeakerState(false);
           if (orbEl) {
             orbEl.classList.remove('speaking');
             orbEl.style.transform = 'scale(1)';
@@ -2315,14 +2589,19 @@
         audio.onerror = () => {
           state.isSpeaking = false;
           currentAudio = null;
+          notifySpeakerState(false);
           if (orbEl) orbEl.classList.remove('speaking');
           if (tagEl) tagEl.textContent = 'Pronta para ouvir';
         };
 
-        await audio.play();
+        await audio.play().catch((err) => {
+          console.warn('[Audio Playback Blocked/Autoplay]', err);
+          showAudioUnlockBanner();
+        });
       } catch (e) {
         state.isSpeaking = false;
         currentAudio = null;
+        notifySpeakerState(false);
         const orbEl = document.getElementById('orb-trigger');
         if (orbEl) orbEl.classList.remove('speaking');
         const tagEl = document.getElementById('voice-state-tag');
@@ -2501,6 +2780,182 @@
       }
     }
 
+    // =========================================================================
+    // GERENCIAMENTO DO HISTÓRICO DE CONVERSAÇÃO (MONITOR & EXPORTAÇÃO)
+    // =========================================================================
+    let conversationLog = [];
+
+    async function loadConversationHistory() {
+      try {
+        const res = await fetch('/api/conversation/history');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && Array.isArray(data.history)) {
+          conversationLog = data.history.slice().reverse(); // Mais recentes no topo
+          renderConversationHistoryList();
+        }
+        if (data && typeof data.requireWakeWord === 'boolean') {
+          const toggle = document.getElementById('cfg-wake-word-toggle');
+          if (toggle) toggle.checked = data.requireWakeWord;
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar histórico de conversação:', err);
+      }
+    }
+
+    function handleConversationTurnEvent(entry) {
+      if (!entry) return;
+
+      // 1. Terminal do Monitor Serial
+      if (entry.status === 'ignored_ambient') {
+        appendSerialLog('VAD-FILTRO', `🛡️ Áudio ambiente ignorado (sem "Eva"): "${entry.userInput || ''}"`, 'vad');
+      } else if (entry.status === 'answered') {
+        const timeStr = entry.timeStr || new Date().toLocaleTimeString('pt-BR');
+        const stt = entry.breakdown?.sttMs != null ? `${entry.breakdown.sttMs}ms` : '--';
+        const llm = entry.breakdown?.llmMs != null ? `${entry.breakdown.llmMs}ms` : '--';
+        const tts = entry.breakdown?.ttsMs != null ? `${entry.breakdown.ttsMs}ms` : '--';
+        const total = entry.latencyMs != null ? `${entry.latencyMs}ms` : '--';
+
+        appendSerialLog('CONV', `┌────────────────── CONVERSAÇÃO EVA ──────────────────┐`, 'sys');
+        appendSerialLog('CONV', `│ [${timeStr}] 👤 Você: "${entry.userInput || ''}"`, 'sys');
+        appendSerialLog('CONV', `│ 🤖 EVA: "${entry.reply || ''}"`, 'sys');
+        appendSerialLog('CONV', `│ ⏱️ Total: ${total} (STT: ${stt} | LLM: ${llm} | TTS: ${tts})`, 'sys');
+        appendSerialLog('CONV', `└─────────────────────────────────────────────────────┘`, 'sys');
+      }
+
+      // 2. Histórico de Conversação na UI
+      const existingIdx = conversationLog.findIndex(item => item.id === entry.id);
+      if (existingIdx >= 0) {
+        conversationLog[existingIdx] = entry;
+      } else {
+        conversationLog.unshift(entry);
+        if (conversationLog.length > 100) conversationLog.pop();
+      }
+      renderConversationHistoryList();
+    }
+
+    function renderConversationHistoryList() {
+      const container = document.getElementById('conv-history-list');
+      const countEl = document.getElementById('conv-log-count');
+      if (!container) return;
+
+      const answeredCount = conversationLog.filter(c => c.status === 'answered').length;
+      if (countEl) {
+        countEl.textContent = `${answeredCount} diálogo${answeredCount === 1 ? '' : 's'}`;
+      }
+
+      if (conversationLog.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 16px;">Nenhum diálogo registrado ainda. Fale com a EVA pelo microfone do ESP32!</div>`;
+        return;
+      }
+
+      container.innerHTML = conversationLog.map(item => {
+        if (item.status === 'answered') {
+          const stt = item.breakdown?.sttMs != null ? `${item.breakdown.sttMs}ms` : '--';
+          const llm = item.breakdown?.llmMs != null ? `${item.breakdown.llmMs}ms` : '--';
+          const tts = item.breakdown?.ttsMs != null ? `${item.breakdown.ttsMs}ms` : '--';
+          const total = item.latencyMs != null ? `${item.latencyMs}ms` : '--';
+
+          return `
+            <div style="background: var(--bg-card); border-radius: 12px; padding: 10px 14px; border-left: 3px solid var(--accent-sage);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 700; color: var(--accent-sage); font-size: 11px;">[${item.timeStr || ''}] INTERAÇÃO POR VOZ</span>
+                <span style="font-size: 10px; background: rgba(122,154,114,0.18); color: var(--accent-sage); padding: 2px 8px; border-radius: 8px; font-weight: 600;">⏱️ ${total}</span>
+              </div>
+              <div style="margin-bottom: 4px; color: var(--text-primary);">
+                <strong style="color: var(--text-secondary);">👤 Você:</strong> "${item.userInput || ''}"
+              </div>
+              <div style="margin-bottom: 6px; color: var(--text-primary); font-family: var(--font-serif); font-size: 13px;">
+                <strong style="color: var(--accent-sage);">🤖 EVA:</strong> "${item.reply || ''}"
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted); display: flex; gap: 10px;">
+                <span>STT: ${stt}</span>
+                <span>·</span>
+                <span>LLM: ${llm}</span>
+                <span>·</span>
+                <span>TTS: ${tts}</span>
+              </div>
+            </div>
+          `;
+        } else if (item.status === 'ignored_ambient') {
+          return `
+            <div style="background: rgba(0,0,0,0.12); border-radius: 10px; padding: 8px 12px; border-left: 3px solid rgba(200,200,200,0.3); opacity: 0.75;">
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">
+                <span>[${item.timeStr || ''}] 🛡️ ÁUDIO AMBIENTE IGNORADO (SEM 'EVA')</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); font-style: italic;">
+                "${item.userInput || ''}"
+              </div>
+            </div>
+          `;
+        }
+        return '';
+      }).join('');
+    }
+
+    async function copyConversationHistory() {
+      const btnText = document.getElementById('copy-conv-text');
+      if (conversationLog.length === 0) {
+        if (btnText) {
+          btnText.textContent = 'Vazio!';
+          setTimeout(() => { if (btnText) btnText.textContent = 'Copiar para Chat'; }, 1500);
+        }
+        return;
+      }
+
+      let markdown = '### 📋 Histórico da Conversação com EVA\n\n';
+      const reversed = conversationLog.slice().reverse();
+      for (const item of reversed) {
+        if (item.status === 'answered') {
+          const stt = item.breakdown?.sttMs != null ? `${item.breakdown.sttMs}ms` : '--';
+          const llm = item.breakdown?.llmMs != null ? `${item.breakdown.llmMs}ms` : '--';
+          const tts = item.breakdown?.ttsMs != null ? `${item.breakdown.ttsMs}ms` : '--';
+          markdown += `- **[${item.timeStr || ''}]**\n`;
+          markdown += `  - 👤 **Você**: "${item.userInput || ''}"\n`;
+          markdown += `  - 🤖 **EVA**: "${item.reply || ''}"\n`;
+          markdown += `  - ⏱️ **Latência**: ${item.latencyMs || 0}ms (STT: ${stt} | LLM: ${llm} | TTS: ${tts})\n\n`;
+        } else if (item.status === 'ignored_ambient') {
+          markdown += `- **[${item.timeStr || ''}]** 🛡️ *[ÁUDIO AMBIENTE IGNORADO]*: "${item.userInput || ''}"\n\n`;
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(markdown.trim());
+        if (btnText) {
+          btnText.textContent = 'Copiado! ✓';
+          setTimeout(() => { if (btnText) btnText.textContent = 'Copiar para Chat'; }, 2000);
+        }
+        appendSerialLog('SYS', 'Histórico copiado em formato Markdown para colar no chat da IA!', 'sys');
+      } catch (err) {
+        console.warn('Falha ao copiar histórico:', err);
+      }
+    }
+
+    async function clearConversationHistoryUi() {
+      try {
+        await fetch('/api/conversation/clear', { method: 'POST' });
+        conversationLog = [];
+        renderConversationHistoryList();
+        appendSerialLog('SYS', 'Histórico de conversação limpo com sucesso.', 'sys');
+      } catch (err) {
+        console.warn('Erro ao limpar histórico:', err);
+      }
+    }
+
+    async function toggleWakeWordRequirement(enabled) {
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requireWakeWord: enabled })
+        });
+        const data = await res.json();
+        appendSerialLog('CFG', `Filtro de ativação ('Eva'): ${data.requireWakeWord ? 'ATIVADO' : 'DESATIVADO'}`, 'sys');
+      } catch (err) {
+        console.warn('Erro ao alterar configuração de wake word:', err);
+      }
+    }
+
     function updateTelemetryBars(tel) {
       if (tel.vadCutoffElapsedMs != null) document.getElementById('lat-t0').textContent = `${tel.vadCutoffElapsedMs} ms`;
       if (tel.sttDurationMs != null) document.getElementById('lat-t2').textContent = `${tel.sttDurationMs} ms`;
@@ -2610,7 +3065,26 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', initThemeAndClock);
+    async function syncBackendStatus() {
+      try {
+        const res = await fetch('/api/bt/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.espConnected === 'boolean' && data.espConnected !== state.isEsp32Connected) {
+            updateHardwareStatus(data.espConnected, data.espIp);
+          }
+          if (typeof data.connected === 'boolean') {
+            updateBluetoothStatus(data.connected, data.deviceName);
+          }
+        }
+      } catch (e) {}
+    }
+    setInterval(syncBackendStatus, 3000);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initThemeAndClock();
+      syncBackendStatus();
+    });
   </script>
 </body>
 </html>

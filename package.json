@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "dotenv": "^18.0.4",
+    "mpg123-decoder": "^1.0.3",
     "msedge-tts": "^2.0.8",
+    "ws": "^8.22.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",
+    "@types/ws": "^8.18.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2"

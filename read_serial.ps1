@@ -1,4 +1,6 @@
 $port = New-Object System.IO.Ports.SerialPort "COM8", 115200, "None", 8, "One"
+$port.DtrEnable = $false
+$port.RtsEnable = $false
 $port.ReadTimeout = 4000
 try {
     $port.Open()

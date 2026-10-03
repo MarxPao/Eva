@@ -48,12 +48,23 @@ export function isWhisperNoise(rawText: string): boolean {
     /\(sil[êe]ncio\)/i,
     /\(aplausos\)/i,
     /\(m[úu]sica\)/i,
+    /cr[ée]ditos\s+finais/i,
+    /continua\s+no\s+pr[oó]ximo/i,
+    /canal\s+do\s+youtube/i,
+    /todos\s+os\s+direitos\s+reservados/i,
+    /áudio\s+(?:em\s+)?portugu[êe]s/i,
   ];
 
   for (const pattern of hallucinationPatterns) {
     if (pattern.test(lower)) {
       return true;
     }
+  }
+
+  // 5. Textos repetitivos alucinados (ex: "é é é", "ah ah ah")
+  const words = cleanWord.split(/\s+/).filter(Boolean);
+  if (words.length >= 3 && new Set(words).size === 1) {
+    return true;
   }
 
   return false;

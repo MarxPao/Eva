@@ -14,14 +14,16 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <WebSocketsServer.h>
+#include <WebSocketsClient.h>
 #include "driver/i2s.h"
 #include <math.h>
 
 // Configurações de Rede
-const char* WIFI_SSID = "Julimara";
-const char* WIFI_PASS = "julimara13";
-const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
+const char* WIFI_SSID = "CMA";
+const char* WIFI_PASS = "clsma1976";
+const char* SERVER_HOST = "192.168.2.146";
+const uint16_t SERVER_PORT = 8080;
+const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
 
 // ============================================================================
 // Configuração de Pinos: Compatibilidade ESP32 Clássico vs ESP32-S3
@@ -36,7 +38,9 @@ const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
   #define LOG_PRINTF(...) do { Serial.printf(__VA_ARGS__); Serial0.printf(__VA_ARGS__); } while(0)
 #else
   // ESP32 Clássico (WROOM-32, DOIT DevKit v1, etc.)
-  #include "BluetoothSerial.h"
+  #include "BluetoothA2DPSource.h"
+  #include "esp_coexist.h"
+  #include "esp_bt.h"
   #define I2S_SD_PIN   32  // Serial Data / DOUT (compartilhado por ambos os microfones)
   #define I2S_WS_PIN   15  // Word Select / LRCLK (compartilhado)
   #define I2S_SCK_PIN  14  // Serial Clock / BCLK (compartilhado)
@@ -44,23 +48,150 @@ const char* SERVER_VOICE_URL = "http://192.168.100.38:8080/api/pipeline/voice";
   #define LOG_PRINTLN(x) Serial.println(x)
   #define LOG_PRINTF(...) Serial.printf(__VA_ARGS__)
 
-  BluetoothSerial SerialBT;
-  const char* BT_DEVICE_NAME = "EVA_Assistant";
+  // 1 = liga A2DP para a caixa de som com o ID 'BT-SPEAKER'; 0 = Bluetooth desligado
+  #define BT_ENABLED 1
+  const char* BT_SPEAKER_NAME = "BT-SPEAKER";
+  static esp_bd_addr_t TARGET_BT_MAC = {0xF4, 0x4E, 0xFD, 0x9A, 0xAB, 0x42};
+
+  // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (4KB = ~23ms a 44.1kHz estéreo)
+  #define TTS_BUFFER_SIZE (4 * 1024)
+  static uint8_t* ttsRingBuffer = nullptr;
+  static volatile size_t ttsHead = 0;
+  static volatile size_t ttsTail = 0;
+  static portMUX_TYPE ttsMux = portMUX_INITIALIZER_UNLOCKED;
+
+  void ttsBufferPush(const uint8_t* data, size_t len) {
+    if (ttsRingBuffer == nullptr) return;
+    portENTER_CRITICAL(&ttsMux);
+    for (size_t i = 0; i < len; i++) {
+      size_t nextHead = (ttsHead + 1) % TTS_BUFFER_SIZE;
+      if (nextHead == ttsTail) {
+        ttsTail = (ttsTail + 1) % TTS_BUFFER_SIZE;
+      }
+      ttsRingBuffer[ttsHead] = data[i];
+      ttsHead = nextHead;
+    }
+    portEXIT_CRITICAL(&ttsMux);
+  }
+
+  size_t ttsBufferPop(uint8_t* dest, size_t maxLen) {
+    if (ttsRingBuffer == nullptr) return 0;
+    portENTER_CRITICAL(&ttsMux);
+    size_t bytesRead = 0;
+    while (bytesRead < maxLen && ttsTail != ttsHead) {
+      dest[bytesRead++] = ttsRingBuffer[ttsTail];
+      ttsTail = (ttsTail + 1) % TTS_BUFFER_SIZE;
+    }
+    portEXIT_CRITICAL(&ttsMux);
+    return bytesRead;
+  }
+
+  void ttsBufferClear() {
+    portENTER_CRITICAL(&ttsMux);
+    ttsHead = 0;
+    ttsTail = 0;
+    portEXIT_CRITICAL(&ttsMux);
+  }
+
+  size_t ttsBufferAvailable() {
+    if (ttsRingBuffer == nullptr) return 0;
+    portENTER_CRITICAL(&ttsMux);
+    size_t count = (ttsHead >= ttsTail) ? (ttsHead - ttsTail) : (TTS_BUFFER_SIZE - ttsTail + ttsHead);
+    portEXIT_CRITICAL(&ttsMux);
+    return count;
+  }
+
+  BluetoothA2DPSource a2dp_source;
+  static volatile bool isBtSpeakerConnected = false;
+  static volatile bool newScanDevice = false;
+  static char lastScanMac[18] = {0};
+  static char lastScanName[36] = {0};
+  static volatile int lastScanRssi = 0;
+
+  int32_t a2dp_data_callback(Frame* data, int32_t len) {
+    size_t bytesNeeded = len * sizeof(Frame);
+    size_t bytesRead = ttsBufferPop((uint8_t*)data, bytesNeeded);
+    if (bytesRead < bytesNeeded) {
+      memset(((uint8_t*)data) + bytesRead, 0, bytesNeeded - bytesRead);
+    }
+    return len;
+  }
+
+  bool bt_ssid_callback(const char* ssid, esp_bd_addr_t address, int rssi) {
+    static esp_bd_addr_t lastLoggedBda = {0};
+    static unsigned long lastLogMs = 0;
+    bool isSame = (memcmp(lastLoggedBda, address, ESP_BD_ADDR_LEN) == 0);
+    if (!isSame || (millis() - lastLogMs > 2000)) {
+      memcpy(lastLoggedBda, address, ESP_BD_ADDR_LEN);
+      lastLogMs = millis();
+      snprintf(lastScanMac, sizeof(lastScanMac), "%02X:%02X:%02X:%02X:%02X:%02X",
+               address[0], address[1], address[2], address[3], address[4], address[5]);
+      if (ssid && strlen(ssid) > 0) {
+        strncpy(lastScanName, ssid, sizeof(lastScanName) - 1);
+        lastScanName[sizeof(lastScanName) - 1] = '\0';
+      } else {
+        strncpy(lastScanName, "<aguardando>", sizeof(lastScanName) - 1);
+      }
+      lastScanRssi = rssi;
+      newScanDevice = true;
+
+      LOG_PRINTF("[BT-SCAN] 📡 MAC: %s | Nome: '%s' | RSSI: %d dBm\n",
+                 lastScanMac, lastScanName, rssi);
+    }
+
+    // 1. Match direto pelo MAC conhecido da SoundCore mini2
+    if (address[0] == 0xF4 && address[1] == 0x4E && address[2] == 0xFD &&
+        address[3] == 0x9A && address[4] == 0xAB && address[5] == 0x42) {
+      LOG_PRINTLN("\n[BT-SCAN] 🎯 ALVO ENCONTRADO POR MAC (F4:4E:FD:9A:AB:42 - SoundCore mini2)! Conectando A2DP...\n");
+      return true;
+    }
+
+    // 2. Match por Nome do dispositivo (case-insensitive)
+    if (ssid != nullptr && strlen(ssid) > 0) {
+      if (strcasestr(ssid, "BT-SPEAKER") != nullptr ||
+          strcasestr(ssid, "BT_SPEAKER") != nullptr ||
+          strcasestr(ssid, "SPEAKER") != nullptr ||
+          strcasestr(ssid, "SOUNDCORE") != nullptr ||
+          strcasestr(ssid, "MINI") != nullptr ||
+          strcasestr(ssid, "CAIXA") != nullptr) {
+        LOG_PRINTF("\n[BT-SCAN] 🎯 ALVO ENCONTRADO: '%s'! Conectando A2DP...\n", ssid);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static volatile bool btStateChanged = false;
+  void a2dp_connection_state_changed(esp_a2d_connection_state_t state, void* obj) {
+    if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+      isBtSpeakerConnected = true;
+      btStateChanged = true;
+      LOG_PRINTLN("\n=======================================================");
+      LOG_PRINTLN("[BT-A2DP] ✅ CONECTADO COM SUCESSO À CAIXA DE SOM BLUETOOTH!");
+      LOG_PRINTLN("=======================================================\n");
+    } else if (state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
+      isBtSpeakerConnected = false;
+      btStateChanged = true;
+      LOG_PRINTLN("\n[BT-A2DP] ⚠️ Caixa de som desconectada. Tentando reconectar...");
+    }
+  }
 #endif
 
 #define I2S_SAMPLE_RATE     16000
 #define BUFFER_PAIRS        256 // 256 pares (512 samples) = 16ms por leitura
 
-// Gravação de voz: até 2.0 segundos a 16kHz 16-bit mono (64.044 bytes contíguos)
-#define MAX_RECORD_SECONDS  2.0f
-#define MAX_RECORD_SAMPLES  (int)(16000 * MAX_RECORD_SECONDS) // 32.000 amostras
-#define WAV_HEADER_SIZE     44
-#define MAX_RECORD_BYTES    (WAV_HEADER_SIZE + MAX_RECORD_SAMPLES * 2) // 64.044 bytes
+// Gravação de voz: até 2.0 segundos local (fallback HTTP) e até 10.0s via WebSocket
+#define MAX_RECORD_SECONDS        2.0f
+#define MAX_RECORD_SAMPLES        (int)(16000 * MAX_RECORD_SECONDS) // 32.000 amostras
+#define MAX_STREAM_RECORD_SAMPLES 160000 // Até 10.0 segundos de fala contínua via WebSocket
+#define WAV_HEADER_SIZE           44
+#define MAX_RECORD_BYTES          (WAV_HEADER_SIZE + MAX_RECORD_SAMPLES * 2) // 64.044 bytes
 
-WebSocketsServer webSocket = WebSocketsServer(80);
+WebSocketsClient webSocket;
 int32_t audioBuffer[BUFFER_PAIRS * 2]; // Captura Stereo (Left/Right mic)
+
 uint8_t* wavBuffer = nullptr;
-uint32_t maxRecordSamples = MAX_RECORD_SAMPLES;
+uint32_t maxRecordSamples = 64000;
 uint32_t recordedSamples = 0;
 
 enum MicState {
@@ -74,24 +205,24 @@ int silenceFrames = 0;
 unsigned long lastPostTime = 0;
 
 // VAD & Calibração Acústica de Alta Precisão (Rejeição de Ruído e Baixa Latência)
-#define NOISE_FLOOR_RMS           450.0f
-#define VAD_THRESHOLD_RMS         1150.0f  // Exige fala real clara (voz humana = 1200-3000 RMS)
-#define VAD_SILENCE_RMS           620.0f   // Fim da fala (acima do ruído ambiente, abaixo da fala)
-#define VAD_TRIGGER_FRAMES        7        // 7 frames consecutivos (~112ms de voz sustentada)
-#define VAD_SILENCE_FRAMES_END    18       // 18 frames de silêncio (~288ms para envio ultrarrápido)
-#define MIN_SPEECH_FRAMES         10       // Pelo menos 10 frames (~160ms) de energia de voz no áudio
-#define MIN_RECORDED_SAMPLES      8000     // Pelo menos 0.5s de áudio gravado
+#define NOISE_FLOOR_RMS           400.0f
+#define VAD_THRESHOLD_RMS         700.0f   // Fala humana clara (conversacional = 700-2500 RMS)
+#define VAD_SILENCE_RMS           480.0f   // Fim da fala (RMS cai abaixo de 480; evita cortar consoantes/fala suave)
+#define VAD_TRIGGER_FRAMES        3        // 3 frames consecutivos (~48ms de voz sustentada)
+#define VAD_SILENCE_FRAMES_END    88       // 88 frames de silêncio (~1408ms): espera o usuário terminar a frase
+#define MIN_SPEECH_FRAMES         4        // Pelo menos 4 frames (~64ms) de energia de voz
+#define MIN_RECORDED_SAMPLES      4800     // Pelo menos 300ms gravados
 
-// Pré-roll circular de 192ms (12 blocos de 256 amostras) para não perder o início da fala
-#define PREROLL_FRAMES            12
+// Pré-roll circular de ~128ms (8 blocos de 256 amostras) para garantir captura integral do "Eva"
+#define PREROLL_FRAMES            8
 #define PREROLL_SAMPLES           (PREROLL_FRAMES * BUFFER_PAIRS)
 int16_t prerollBuffer[PREROLL_SAMPLES];
 int prerollHead = 0;
 int speechFramesCount = 0;
 
 // Streaming de Áudio em Chunks (T1 - P0 Latency Optimization)
-#define CHUNK_SAMPLES             2048  // 128ms a 16kHz
-#define CHUNK_BYTES               (CHUNK_SAMPLES * sizeof(int16_t)) // 4096 bytes
+#define CHUNK_SAMPLES             1024  // 64ms a 16kHz
+#define CHUNK_BYTES               (CHUNK_SAMPLES * sizeof(int16_t)) // 2048 bytes
 int16_t streamChunkBuffer[CHUNK_SAMPLES];
 size_t streamChunkIndex = 0;
 uint32_t streamDroppedChunks = 0;
@@ -100,18 +231,11 @@ static int16_t linPreroll[PREROLL_SAMPLES];
 unsigned long speakerMuteUntil = 0;
 
 void sendBluetoothCommand(const String& cmd) {
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-  if (SerialBT.hasClient()) {
-    SerialBT.println(cmd);
-    LOG_PRINTF("[BT] 📤 Comando enviado via Bluetooth: %s\n", cmd.c_str());
-  } else {
-    SerialBT.println(cmd);
-    LOG_PRINTF("[BT] 📤 Comando no buffer Bluetooth (sem cliente ativo): %s\n", cmd.c_str());
-  }
-#endif
+  LOG_PRINTF("[BT-CMD] %s\n", cmd.c_str());
 }
 
 void fillWavHeader(uint8_t* header, uint32_t pcmDataBytes) {
+  if (header == nullptr) return;
   uint32_t totalDataLen = pcmDataBytes;
   uint32_t totalFileLen = totalDataLen + 36;
   uint32_t sampleRate = 16000;
@@ -148,6 +272,10 @@ void fillWavHeader(uint8_t* header, uint32_t pcmDataBytes) {
 }
 
 void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
+  if (wavBuffer == nullptr) {
+    LOG_PRINTLN("[EVA] ⚠️ wavBuffer é nulo, ignorando HTTP POST.");
+    return;
+  }
   if (WiFi.status() != WL_CONNECTED) {
     LOG_PRINTLN("[EVA] Wi-Fi desconectado. Cancelando envio de áudio.");
     return;
@@ -255,22 +383,63 @@ void i2sMicInit() {
   LOG_PRINTLN("[I2S] Microfone inicializado com captura estéreo.");
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
-      LOG_PRINTF("[WebSocket] Cliente #%u desconectado.\n", num);
+      LOG_PRINTF("[WebSocket] ⚠️ Desconectado do servidor EVA. Motivo: '%s' (len: %u)\n", payload ? (char*)payload : "nenhum", (unsigned int)length);
+      break;
+    case WStype_ERROR:
+      LOG_PRINTF("[WebSocket] ❌ Erro de conexão: %s\n", payload ? (char*)payload : "");
       break;
     case WStype_CONNECTED: {
-      IPAddress ip = webSocket.remoteIP(num);
-      LOG_PRINTF("[WebSocket] Cliente #%u conectado de %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
-      webSocket.sendTXT(num, "{\"level\":0,\"rms\":0.0}");
+      LOG_PRINTLN("[WebSocket] ✅ CONECTADO COM SUCESSO AO BACKEND EVA!");
+      webSocket.sendTXT("{\"level\":0,\"rms\":0.0}");
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+      bool curConnected = a2dp_source.is_connected();
+      char btInitJson[96];
+      snprintf(btInitJson, sizeof(btInitJson), "{\"type\":\"bt_state\",\"connected\":%s,\"deviceName\":\"%s\"}",
+               curConnected ? "true" : "false", BT_SPEAKER_NAME);
+      webSocket.sendTXT(btInitJson);
+#endif
+      break;
+    }
+    case WStype_BIN: {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+      // Áudio PCM 44.1kHz estéreo recebido para tocar na caixa Bluetooth
+      if (payload != nullptr && length > 0) {
+        ttsBufferPush(payload, length);
+      }
+#endif
       break;
     }
     case WStype_TEXT: {
       String msg = String((char*)payload);
       if (msg.indexOf("\"interrupt\"") >= 0) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        ttsBufferClear();
+#endif
         speakerMuteUntil = 0;
-        LOG_PRINTLN("[BARGE-IN] ⚡ Interrupção de fala recebida! VAD reativado imediatamente.");
+        LOG_PRINTLN("[BARGE-IN] ⚡ Interrupção de fala recebida! Buffer A2DP limpo e VAD reativado imediatamente.");
+      } else if (msg.indexOf("\"cmd\":\"connect_bt\"") >= 0 || msg.indexOf("\"connect_bt\"") >= 0) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        LOG_PRINTLN("[BT-A2DP] 🔄 Solicitação de conexão Bluetooth recebida via WebSocket! Conectando diretamente ao MAC...");
+        if (BT_ENABLED) a2dp_source.connect_to(TARGET_BT_MAC);
+#endif
+      } else if (msg.indexOf("\"cmd\":\"get_bt_status\"") >= 0 || msg.indexOf("\"get_bt_status\"") >= 0) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        bool curConnected = a2dp_source.is_connected();
+        char btStatusJson[96];
+        snprintf(btStatusJson, sizeof(btStatusJson), "{\"type\":\"bt_state\",\"connected\":%s,\"deviceName\":\"%s\"}",
+                 curConnected ? "true" : "false", BT_SPEAKER_NAME);
+        webSocket.sendTXT(btStatusJson);
+#endif
+      } else if (msg.indexOf("\"tts_start\"") >= 0) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        ttsBufferClear();
+#endif
+        LOG_PRINTLN("[TTS] 🔊 Início de reprodução TTS via Bluetooth A2DP...");
+      } else if (msg.indexOf("\"tts_end\"") >= 0) {
+        LOG_PRINTLN("[TTS] 🔈 Fim do streaming de áudio TTS.");
       } else if (msg.indexOf("\"cmd\":\"speaker\"") >= 0 || msg.indexOf("\"speaker\"") >= 0) {
         if (msg.indexOf("true") >= 0) {
           unsigned long dur = 5000;
@@ -284,6 +453,43 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         } else {
           speakerMuteUntil = 0;
           LOG_PRINTLN("[AEC] 🔈 Alto-falante finalizado. VAD pronto.");
+        }
+      } else if (msg.indexOf("\"cmd\":\"conversation_log\"") >= 0) {
+        int statusIdx = msg.indexOf("\"status\":");
+        String status = "";
+        if (statusIdx >= 0) {
+          int sStart = msg.indexOf("\"", statusIdx + 9);
+          int sEnd = msg.indexOf("\"", sStart + 1);
+          if (sStart >= 0 && sEnd > sStart) status = msg.substring(sStart + 1, sEnd);
+        }
+
+        int userIdx = msg.indexOf("\"user\":");
+        String user = "";
+        if (userIdx >= 0) {
+          int uStart = msg.indexOf("\"", userIdx + 7);
+          int uEnd = msg.indexOf("\"", uStart + 1);
+          if (uStart >= 0 && uEnd > uStart) user = msg.substring(uStart + 1, uEnd);
+        }
+
+        if (status == "answered") {
+          int replyIdx = msg.indexOf("\"reply\":");
+          String reply = "";
+          if (replyIdx >= 0) {
+            int rStart = msg.indexOf("\"", replyIdx + 8);
+            int rEnd = msg.indexOf("\"", rStart + 1);
+            if (rStart >= 0 && rEnd > rStart) reply = msg.substring(rStart + 1, rEnd);
+          }
+          int latIdx = msg.indexOf("\"latencyMs\":");
+          long lat = 0;
+          if (latIdx >= 0) lat = msg.substring(latIdx + 12).toInt();
+
+          LOG_PRINTLN("\n================== [CONVERSAÇÃO EVA] ==================");
+          LOG_PRINTF("👤 USUÁRIO: \"%s\"\n", user.c_str());
+          LOG_PRINTF("🤖 EVA:     \"%s\"\n", reply.c_str());
+          LOG_PRINTF("⏱️ LATÊNCIA: %ld ms\n", lat);
+          LOG_PRINTLN("=======================================================\n");
+        } else if (status == "ignored_ambient") {
+          LOG_PRINTF("[VAD] 🛡️ Áudio ambiente ignorado (sem 'Eva'): \"%s\"\n", user.c_str());
         }
       }
       break;
@@ -300,6 +506,10 @@ void setup() {
 #endif
   delay(1000);
 
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+#endif
+
   LOG_PRINTLN("\n==================================");
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
   LOG_PRINTLN("    EVA — ESP32-S3 VOICE ENGINE   ");
@@ -311,19 +521,17 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-  SerialBT.begin(BT_DEVICE_NAME);
-  LOG_PRINTF("[BT] 🔵 Bluetooth Classic Serial iniciado como '%s'.\n", BT_DEVICE_NAME);
-#endif
-
   i2sMicInit();
 
   LOG_PRINTF("[WiFi] Conectando a: %s\n", WIFI_SSID);
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
   int retries = 0;
-  while (WiFi.status() != WL_CONNECTED && retries < 35) {
+  while (WiFi.status() != WL_CONNECTED && retries < 50) {
     delay(300);
     LOG_PRINTLN(".");
     retries++;
@@ -333,48 +541,110 @@ void setup() {
     LOG_PRINTLN("\n[WiFi] Conectado!");
     LOG_PRINTF("[WiFi] IP do ESP32: %s\n", WiFi.localIP().toString().c_str());
     LOG_PRINTF("[EVA] Backend: %s\n", SERVER_VOICE_URL);
+
+    // Auto-registro dinâmico de IP no servidor EVA
+    HTTPClient regHttp;
+    String regUrl = "http://192.168.2.146:8080/api/esp32/register?ip=" + WiFi.localIP().toString();
+    regHttp.begin(regUrl);
+    regHttp.setTimeout(2500);
+    int regCode = regHttp.GET();
+    if (regCode == 200) {
+      LOG_PRINTLN("[EVA] ✅ Registrado com sucesso no servidor!");
+    }
+    regHttp.end();
   } else {
     LOG_PRINTLN("\n[WiFi] Falha ao conectar. Operando modo offline.");
   }
 
-  webSocket.begin();
+  webSocket.begin(SERVER_HOST, SERVER_PORT, "/api/esp32/ws", "");
   webSocket.onEvent(webSocketEvent);
-  LOG_PRINTLN("[WebSocket] Servidor escutando na porta 80.");
+  webSocket.setReconnectInterval(1500);
+  LOG_PRINTF("[WebSocket] Cliente configurado para ws://%s:%u/api/esp32/ws\n", SERVER_HOST, SERVER_PORT);
 
-  // Aloca buffer de áudio após Bluetooth e Wi-Fi estarem ativos para evitar falta de memória na stack do BT
-  size_t freeHeap = esp_get_free_heap_size();
-  size_t largestFree = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
-  LOG_PRINTF("[MEM] Heap livre pós-rede/BT: %u bytes, maior bloco: %u bytes\n", freeHeap, largestFree);
-
-  size_t allocSize = (largestFree > 18432) ? (largestFree - 14336) : 0;
-  if (allocSize > 48000) allocSize = 48000;
-  if (allocSize >= 16000) {
-    wavBuffer = (uint8_t*)malloc(allocSize);
-    if (wavBuffer != nullptr) {
-      maxRecordSamples = (allocSize - WAV_HEADER_SIZE) / sizeof(int16_t);
-      LOG_PRINTF("[MEM] ✅ Buffer de voz alocado com segurança: %d bytes (%.1f KB, max %u amostras)\n", allocSize, allocSize / 1024.0, maxRecordSamples);
-    }
-  } else {
-    LOG_PRINTLN("[MEM] ⚠️ Memória contígua insuficiente para buffer WAV completo. Operando em modo de streaming contínuo.");
+  // Estabelece a conexão WebSocket inicial com heap livre abundante (>150KB) antes do Bluedroid
+  unsigned long wsStart = millis();
+  while (!webSocket.isConnected() && millis() - wsStart < 2500) {
+    webSocket.loop();
+    delay(50);
   }
+  if (webSocket.isConnected()) {
+    LOG_PRINTLN("[WebSocket] ✅ Conexão WebSocket estabelecida no boot!");
+  } else {
+    LOG_PRINTLN("[WebSocket] ⏳ Handshake em andamento; continuará no loop principal.");
+  }
+
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  esp_coex_preference_set(ESP_COEX_PREFER_WIFI);
+  ttsRingBuffer = (uint8_t*)malloc(TTS_BUFFER_SIZE);
+  if (ttsRingBuffer != nullptr) {
+    LOG_PRINTF("[MEM] ✅ Buffer A2DP alocado: %d bytes (%.1f KB)\n", TTS_BUFFER_SIZE, TTS_BUFFER_SIZE / 1024.0);
+  }
+
+#if BT_ENABLED
+  a2dp_source.set_ssid_callback(bt_ssid_callback);
+  a2dp_source.set_on_connection_state_changed(a2dp_connection_state_changed);
+  a2dp_source.set_auto_reconnect(TARGET_BT_MAC, 100);
+  a2dp_source.start(BT_SPEAKER_NAME, a2dp_data_callback);
+  LOG_PRINTF("[BT-A2DP] 🎵 A2DP Source iniciado buscando '%s'...\n", BT_SPEAKER_NAME);
+#else
+  LOG_PRINTLN("[BT-A2DP] ⏸️ Bluetooth DESLIGADO (BT_ENABLED=0) para estabilizar Wi-Fi.");
+#endif
+#endif
+
+  size_t freeHeap = esp_get_free_heap_size();
+  LOG_PRINTF("[MEM] 🏁 Setup concluído! Heap livre pós-BT: %u bytes\n", freeHeap);
 }
 
 void loop() {
   webSocket.loop();
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-  if (SerialBT.available()) {
-    String btIncoming = SerialBT.readStringUntil('\n');
-    btIncoming.trim();
-    if (btIncoming.length() > 0) {
-      LOG_PRINTF("[BT] 📥 Comando recebido via Bluetooth: %s\n", btIncoming.c_str());
-      SerialBT.printf("ACK:%s\n", btIncoming.c_str());
+  static unsigned long lastBtCheck = 0;
+  static unsigned long lastBtDirectConnect = 0;
+  if (millis() - lastBtCheck > 1500) {
+    lastBtCheck = millis();
+    bool curBtConn = a2dp_source.is_connected();
+    if (curBtConn != isBtSpeakerConnected) {
+      isBtSpeakerConnected = curBtConn;
+      btStateChanged = true;
+    }
+  }
+
+  // Tenta conexão direta periódica ao MAC da caixa SoundCore mini2 a cada 8 segundos se não conectada
+  if (BT_ENABLED && !isBtSpeakerConnected && millis() - lastBtDirectConnect > 8000) {
+    lastBtDirectConnect = millis();
+    a2dp_source.connect_to(TARGET_BT_MAC);
+  }
+
+  if (btStateChanged) {
+    btStateChanged = false;
+    if (webSocket.isConnected()) {
+      char btJson[96];
+      snprintf(btJson, sizeof(btJson), "{\"type\":\"bt_state\",\"connected\":%s,\"deviceName\":\"%s\"}",
+               isBtSpeakerConnected ? "true" : "false", BT_SPEAKER_NAME);
+      webSocket.sendTXT(btJson);
+    }
+    LOG_PRINTF("[BT-A2DP] 📡 Status: %s\n", isBtSpeakerConnected ? "CONECTADO" : "PROCURANDO");
+  }
+
+  if (newScanDevice) {
+    newScanDevice = false;
+    if (webSocket.isConnected()) {
+      char scanJson[128];
+      snprintf(scanJson, sizeof(scanJson), "{\"type\":\"bt_scan\",\"mac\":\"%s\",\"name\":\"%s\",\"rssi\":%d}",
+               lastScanMac, lastScanName, lastScanRssi);
+      webSocket.sendTXT(scanJson);
     }
   }
 #endif
 
   size_t bytesRead = 0;
   esp_err_t res = i2s_read(I2S_NUM_0, audioBuffer, sizeof(audioBuffer), &bytesRead, portMAX_DELAY);
+
+  // Variáveis estáticas de controle de canal e filtro DC-Blocker
+  static int activeMicChannel = 0; // 0 = Left, 1 = Right
+  static float dcBlockerX = 0.0f;
+  static float dcBlockerY = 0.0f;
 
   if (res == ESP_OK && bytesRead > 0) {
     size_t pairs = (bytesRead / sizeof(int32_t)) / 2;
@@ -404,7 +674,16 @@ void loop() {
 
     float rmsL = sqrt(sqDiffL / pairs);
     float rmsR = sqrt(sqDiffR / pairs);
-    float activeRms = (rmsL >= rmsR) ? rmsL : rmsR;
+
+    // INMP441 Mono: trava automaticamente no canal com microfone ativo.
+    // NUNCA misturar com o canal flutuante para evitar ruído estático e corte de amplitude.
+    if (rmsL > rmsR * 2.0f && rmsL > 150.0f) {
+      activeMicChannel = 0;
+    } else if (rmsR > rmsL * 2.0f && rmsR > 150.0f) {
+      activeMicChannel = 1;
+    }
+
+    float activeRms = (activeMicChannel == 0) ? rmsL : rmsR;
 
     // Normaliza para 0 - 100% com filtro de piso de ruído
     int level = 0;
@@ -419,188 +698,236 @@ void loop() {
     // Suporte a Barge-In (Interrupção de Fala):
     // A captação VAD permanece ativa para que o usuário possa interromper com 'eva:'.
     // O backend descarta automaticamente qualquer eco que não contenha a palavra 'eva'.
-    if (wavBuffer != nullptr) {
-      if (false) {
-        // Reservado para mute manual estrito
+    
+    // Alimenta buffer circular de pré-roll (últimos 192ms) quando em repouso
+    if (micState == STATE_IDLE) {
+      for (size_t i = 0; i < pairs; i++) {
+        int32_t raw = (activeMicChannel == 0) ? (audioBuffer[i * 2] >> 14) : (audioBuffer[i * 2 + 1] >> 14);
+
+        // Filtro IIR DC-Blocker (corte ~13Hz): remove DC bias e ruídos de baixa frequência
+        float x = (float)raw;
+        float y = x - dcBlockerX + 0.995f * dcBlockerY;
+        dcBlockerX = x;
+        dcBlockerY = y;
+        int32_t val = (int32_t)y;
+
+        if (val > 32767) val = 32767;
+        if (val < -32768) val = -32768;
+        prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES] = (int16_t)val;
+      }
+      prerollHead = (prerollHead + pairs) % PREROLL_SAMPLES;
+
+      // Limiar dinâmico de VAD com AEC: se a EVA estiver falando pela caixa BT,
+      // eleva o limiar para 2600 RMS para que o som da caixa não dispare o microfone
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+      bool isSpeakerActive = (millis() < speakerMuteUntil) || (ttsBufferAvailable() > 0);
+#else
+      bool isSpeakerActive = (millis() < speakerMuteUntil);
+#endif
+      float currentVadThreshold = isSpeakerActive ? 3200.0f : VAD_THRESHOLD_RMS;
+
+      // Fala humana sustentada detectada (RMS >= currentVadThreshold)
+      if (activeRms >= currentVadThreshold) {
+        voiceDetectFrames++;
+        if (voiceDetectFrames >= VAD_TRIGGER_FRAMES) { // ~80ms de fala sustentada
+          micState = STATE_RECORDING;
+          silenceFrames = 0;
+          speechFramesCount = VAD_TRIGGER_FRAMES;
+          streamChunkIndex = 0;
+          digitalWrite(LED_PIN, HIGH);
+          LOG_PRINTLN("[EVA] 🎙️ Fala humana detectada! Gravando e transmitindo...");
+          webSocket.sendTXT("{\"type\":\"hw_status\",\"state\":\"recording\"}");
+
+          // Copia o pré-roll para não perder o início da primeira palavra
+          if (wavBuffer != nullptr) {
+            int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
+            for (int i = 0; i < PREROLL_SAMPLES; i++) {
+              int16_t sample = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
+              pcm16[i] = sample;
+              linPreroll[i] = sample;
+            }
+          } else {
+            for (int i = 0; i < PREROLL_SAMPLES; i++) {
+              linPreroll[i] = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
+            }
+          }
+          recordedSamples = PREROLL_SAMPLES;
+
+          // Inicia streaming contínuo no WebSocket (T1 - P0)
+          if (webSocket.isConnected()) {
+            webSocket.sendTXT("{\"type\":\"audio_stream_start\"}");
+            webSocket.sendBIN((uint8_t*)linPreroll, PREROLL_SAMPLES * sizeof(int16_t));
+          }
+        }
       } else {
-        // Alimenta buffer circular de pré-roll (últimos 192ms) quando em repouso
-        if (micState == STATE_IDLE) {
-          for (size_t i = 0; i < pairs; i++) {
-            int32_t valL = audioBuffer[i * 2] >> 13;
-            int32_t valR = audioBuffer[i * 2 + 1] >> 13;
-            // Mixagem inteligente de 2 microfones (ou seleção automática do canal ativo se apenas 1 estiver ligado)
-            int32_t val = (rmsL > 50.0f && rmsR > 50.0f) ? ((valL + valR) / 2) : ((rmsL >= rmsR) ? valL : valR);
-            if (val > 32767) val = 32767;
-            if (val < -32768) val = -32768;
-            prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES] = (int16_t)val;
-          }
-          prerollHead = (prerollHead + pairs) % PREROLL_SAMPLES;
+        voiceDetectFrames = 0;
+      }
+    }
 
-          // Fala humana sustentada detectada (RMS >= VAD_THRESHOLD_RMS = 1150)
-          if (activeRms >= VAD_THRESHOLD_RMS) {
-            voiceDetectFrames++;
-            if (voiceDetectFrames >= VAD_TRIGGER_FRAMES) { // ~112ms de fala sustentada
-              micState = STATE_RECORDING;
-              silenceFrames = 0;
-              speechFramesCount = VAD_TRIGGER_FRAMES;
-              streamChunkIndex = 0;
-              digitalWrite(LED_PIN, HIGH);
-              LOG_PRINTLN("[EVA] 🎙️ Fala humana detectada! Gravando e transmitindo...");
-              webSocket.broadcastTXT("{\"type\":\"hw_status\",\"state\":\"recording\"}");
+    if (micState == STATE_RECORDING) {
+      for (size_t i = 0; i < pairs; i++) {
+        int32_t raw = (activeMicChannel == 0) ? (audioBuffer[i * 2] >> 14) : (audioBuffer[i * 2 + 1] >> 14);
 
-              // Copia o pré-roll para não perder o início da primeira palavra
-              int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
-              for (int i = 0; i < PREROLL_SAMPLES; i++) {
-                int16_t sample = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
-                pcm16[i] = sample;
-                linPreroll[i] = sample;
-              }
-              recordedSamples = PREROLL_SAMPLES;
+        // Filtro IIR DC-Blocker
+        float x = (float)raw;
+        float y = x - dcBlockerX + 0.995f * dcBlockerY;
+        dcBlockerX = x;
+        dcBlockerY = y;
+        int32_t val = (int32_t)y;
 
-              // Inicia streaming contínuo no WebSocket (T1 - P0)
-              if (webSocket.connectedClients() > 0) {
-                webSocket.broadcastTXT("{\"type\":\"audio_stream_start\"}");
-                webSocket.broadcastBIN((uint8_t*)linPreroll, PREROLL_SAMPLES * sizeof(int16_t));
-              }
-            }
-          } else {
-            voiceDetectFrames = 0;
-          }
-        }
+        if (val > 32767) val = 32767;
+        if (val < -32768) val = -32768;
+        int16_t sample = (int16_t)val;
 
-        if (micState == STATE_RECORDING) {
+        if (wavBuffer != nullptr && recordedSamples < maxRecordSamples) {
           int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
-          for (size_t i = 0; i < pairs; i++) {
-            int32_t valL = audioBuffer[i * 2] >> 13;
-            int32_t valR = audioBuffer[i * 2 + 1] >> 13;
-            int32_t val = (rmsL > 50.0f && rmsR > 50.0f) ? ((valL + valR) / 2) : ((rmsL >= rmsR) ? valL : valR);
-            if (val > 32767) val = 32767;
-            if (val < -32768) val = -32768;
-            int16_t sample = (int16_t)val;
-
-            if (recordedSamples < maxRecordSamples) {
-              pcm16[recordedSamples++] = sample;
-            }
-
-            streamChunkBuffer[streamChunkIndex++] = sample;
-            if (streamChunkIndex >= CHUNK_SAMPLES) {
-              if (webSocket.connectedClients() > 0) {
-                // Backpressure: verifica memória livre no heap antes de enviar
-                if (esp_get_free_heap_size() >= 24576) {
-                  webSocket.broadcastBIN((uint8_t*)streamChunkBuffer, CHUNK_BYTES);
-                } else {
-                  streamDroppedChunks++;
-                }
-              }
-              streamChunkIndex = 0;
-            }
-          }
-
-          // Contabiliza frames que possuem energia real de fala
-          if (activeRms >= 950.0f) {
-            speechFramesCount++;
-          }
-
-          // Fim da fala por silêncio rápido (RMS < VAD_SILENCE_RMS = 620)
-          if (activeRms < VAD_SILENCE_RMS) {
-            silenceFrames++;
-            if (silenceFrames >= VAD_SILENCE_FRAMES_END && recordedSamples >= MIN_RECORDED_SAMPLES) {
-              micState = STATE_SENDING;
-            }
-          } else {
-            silenceFrames = 0;
-          }
-
-          if (recordedSamples >= maxRecordSamples) {
-            micState = STATE_SENDING;
-          }
+          pcm16[recordedSamples] = sample;
         }
+        recordedSamples++;
 
-        if (micState == STATE_SENDING) {
-          unsigned long t0_cutoff = millis();
-          digitalWrite(LED_PIN, LOW);
-
-          // Validação anti-falso-positivo: descarta se não houver fala real suficiente
-          if (speechFramesCount < MIN_SPEECH_FRAMES || recordedSamples < MIN_RECORDED_SAMPLES) {
-            LOG_PRINTF("[VAD] ⚠️ Descartado ruído impulsivo/estalo (%d frames de voz, %u amostras).\n",
-                       speechFramesCount, recordedSamples);
-            if (webSocket.connectedClients() > 0) {
-              webSocket.broadcastTXT("{\"type\":\"audio_stream_cancel\"}");
-            }
-            micState = STATE_IDLE;
-            voiceDetectFrames = 0;
-            silenceFrames = 0;
-            speechFramesCount = 0;
-            streamChunkIndex = 0;
-            webSocket.broadcastTXT("{\"type\":\"hw_status\",\"state\":\"idle\"}");
-          } else {
-            if (webSocket.connectedClients() > 0) {
-              // Flush do chunk residual final (se houver amostras pendentes)
-              if (streamChunkIndex > 0) {
-                webSocket.broadcastBIN((uint8_t*)streamChunkBuffer, streamChunkIndex * sizeof(int16_t));
-                streamChunkIndex = 0;
-              }
-              unsigned long t_upload_complete = millis();
-              char endMsg[160];
-              snprintf(endMsg, sizeof(endMsg),
-                       "{\"type\":\"audio_stream_end\",\"t0\":%lu,\"t_upload_complete\":%lu,\"samples\":%u,\"dropped\":%u}",
-                       t0_cutoff, t_upload_complete, recordedSamples, streamDroppedChunks);
-              webSocket.broadcastTXT(endMsg);
-
-              LOG_PRINTF("[STREAM T1] ⚡ Áudio finalizado! Cutoff -> Upload: %lu ms (%u amostras, %u descartes)\n",
-                         t_upload_complete - t0_cutoff, recordedSamples, streamDroppedChunks);
-
-              lastPostTime = millis();
-              micState = STATE_IDLE;
-              voiceDetectFrames = 0;
-              silenceFrames = 0;
-              speechFramesCount = 0;
+        streamChunkBuffer[streamChunkIndex++] = sample;
+        if (streamChunkIndex >= CHUNK_SAMPLES) {
+          if (webSocket.isConnected()) {
+            // Backpressure: envia se o heap tiver pelo menos 4KB livres
+            if (esp_get_free_heap_size() >= 4096) {
+              webSocket.sendBIN((uint8_t*)streamChunkBuffer, CHUNK_BYTES);
             } else {
-              // Fallback HTTP POST caso nenhum cliente WebSocket esteja conectado
-              webSocket.broadcastTXT("{\"type\":\"hw_status\",\"state\":\"sending\"}");
-              sendVoiceToBackend(t0_cutoff);
-              lastPostTime = millis();
-              micState = STATE_IDLE;
-              voiceDetectFrames = 0;
-              silenceFrames = 0;
-              speechFramesCount = 0;
-              streamChunkIndex = 0;
+              streamDroppedChunks++;
             }
           }
+          streamChunkIndex = 0;
+        }
+      }
+
+      // Contabiliza frames que possuem energia real de fala
+      if (activeRms >= VAD_SILENCE_RMS) {
+        speechFramesCount++;
+      }
+
+      // Fim da fala por silêncio rápido (RMS < VAD_SILENCE_RMS = 550)
+      if (activeRms < VAD_SILENCE_RMS) {
+        silenceFrames++;
+        if (silenceFrames >= VAD_SILENCE_FRAMES_END && recordedSamples >= MIN_RECORDED_SAMPLES) {
+          micState = STATE_SENDING;
+        }
+      } else {
+        silenceFrames = 0;
+      }
+
+      uint32_t limitSamples = (webSocket.isConnected()) ? MAX_STREAM_RECORD_SAMPLES : maxRecordSamples;
+      if (recordedSamples >= limitSamples) {
+        micState = STATE_SENDING;
+      }
+    }
+
+    if (micState == STATE_SENDING) {
+      unsigned long t0_cutoff = millis();
+      digitalWrite(LED_PIN, LOW);
+
+      // Validação anti-falso-positivo: descarta se não houver fala real suficiente
+      if (speechFramesCount < MIN_SPEECH_FRAMES || recordedSamples < MIN_RECORDED_SAMPLES) {
+        LOG_PRINTF("[VAD] ⚠️ Descartado ruído impulsivo/estalo (%d frames de voz, %u amostras).\n",
+                   speechFramesCount, recordedSamples);
+        if (webSocket.isConnected()) {
+          webSocket.sendTXT("{\"type\":\"audio_stream_cancel\"}");
+        }
+        micState = STATE_IDLE;
+        voiceDetectFrames = 0;
+        silenceFrames = 0;
+        speechFramesCount = 0;
+        streamChunkIndex = 0;
+        webSocket.sendTXT("{\"type\":\"hw_status\",\"state\":\"idle\"}");
+      } else {
+        if (webSocket.isConnected()) {
+          // Flush do chunk residual final (se houver amostras pendentes)
+          if (streamChunkIndex > 0) {
+            webSocket.sendBIN((uint8_t*)streamChunkBuffer, streamChunkIndex * sizeof(int16_t));
+            streamChunkIndex = 0;
+          }
+          unsigned long t_upload_complete = millis();
+          char endMsg[160];
+          snprintf(endMsg, sizeof(endMsg),
+                   "{\"type\":\"audio_stream_end\",\"t0\":%lu,\"t_upload_complete\":%lu,\"samples\":%u,\"dropped\":%u}",
+                   t0_cutoff, t_upload_complete, recordedSamples, streamDroppedChunks);
+          webSocket.sendTXT(endMsg);
+
+          LOG_PRINTF("[STREAM T1] ⚡ Áudio finalizado! Cutoff -> Upload: %lu ms (%u amostras, %u descartes)\n",
+                     t_upload_complete - t0_cutoff, recordedSamples, streamDroppedChunks);
+
+          lastPostTime = millis();
+          micState = STATE_IDLE;
+          voiceDetectFrames = 0;
+          silenceFrames = 0;
+          speechFramesCount = 0;
+          streamDroppedChunks = 0;
+        } else {
+          // Fallback HTTP POST caso nenhum cliente WebSocket esteja conectado
+          if (wavBuffer != nullptr) {
+            webSocket.sendTXT("{\"type\":\"hw_status\",\"state\":\"sending\"}");
+            sendVoiceToBackend(t0_cutoff);
+          } else {
+            LOG_PRINTLN("[EVA] ⚠️ Sem cliente WebSocket conectado e sem buffer WAV; gravação descartada.");
+          }
+          lastPostTime = millis();
+          micState = STATE_IDLE;
+          voiceDetectFrames = 0;
+          silenceFrames = 0;
+          speechFramesCount = 0;
+          streamChunkIndex = 0;
+          streamDroppedChunks = 0;
         }
       }
     }
 
-    // Telemetria via WebSocket a cada ~50ms
+    // Telemetria via WebSocket a cada ~200ms (reduz tráfego de rede e previne colisões com Bluetooth/Wi-Fi)
     static unsigned long lastWs = 0;
-    if (millis() - lastWs > 50 && micState != STATE_SENDING) {
+    if (webSocket.isConnected() && millis() - lastWs > 200 && micState != STATE_SENDING) {
       lastWs = millis();
       char jsonMsg[110];
       snprintf(jsonMsg, sizeof(jsonMsg), "{\"level\":%d,\"rms\":%.1f,\"rmsL\":%.1f,\"rmsR\":%.1f,\"nz\":%d,\"st\":\"%s\"}",
                level, activeRms, rmsL, rmsR, nonZero, 
                (micState == STATE_RECORDING ? "rec" : (micState == STATE_SENDING ? "send" : "idle")));
-      webSocket.broadcastTXT(jsonMsg);
+      webSocket.sendTXT(jsonMsg);
     }
 
-    // Log na Serial a cada 500ms
+    // Log na Serial a cada 1000ms
     static unsigned long lastSerial = 0;
-    if (millis() - lastSerial > 500 && micState == STATE_IDLE) {
+    if (millis() - lastSerial > 1000 && micState == STATE_IDLE) {
       lastSerial = millis();
       if (nonZero == 0) {
         LOG_PRINTLN("[MIC] SINAL ZERO (0.0). Verifique pinos SD/SCK/WS/VDD.");
       } else {
-        LOG_PRINTF("[MIC] RMS: %.1f | Vol: %d%% | nz: %d | Estado: IDLE (Pronto para ouvir)\n", 
-                   activeRms, level, nonZero);
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        bool btConn = a2dp_source.is_connected();
+#else
+        bool btConn = false;
+#endif
+        LOG_PRINTF("[EVA-HW] IP: %s | BT: %s | RMS: %.1f | Vol: %d%%\n", 
+                   WiFi.localIP().toString().c_str(),
+                   btConn ? "CONECTADO (BT-SPEAKER)" : "PROCURANDO BT-SPEAKER...",
+                   activeRms, level);
       }
     }
   }
 
-  // Auto-reconectar Wi-Fi se cair
+  // Auto-reconectar Wi-Fi com debounce seguro
+  static bool wasConnected = true;
+  static unsigned long disconnectStart = 0;
+
   if (WiFi.status() != WL_CONNECTED) {
-    static unsigned long lastRec = 0;
-    if (millis() - lastRec > 8000) {
-      lastRec = millis();
+    if (disconnectStart == 0) {
+      disconnectStart = millis();
+    } else if (millis() - disconnectStart > 5000 && wasConnected) {
+      wasConnected = false;
+      LOG_PRINTLN("[WiFi] ⚠️ Wi-Fi desconectado por mais de 5s. Tentando reconectar...");
       WiFi.reconnect();
+    }
+  } else {
+    disconnectStart = 0;
+    if (!wasConnected) {
+      wasConnected = true;
+      LOG_PRINTF("[WiFi] ✅ Conexão restabelecida! IP: %s\n", WiFi.localIP().toString().c_str());
+      webSocket.begin(SERVER_HOST, SERVER_PORT, "/api/esp32/ws", "");
     }
   }
 }

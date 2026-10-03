@@ -30,10 +30,10 @@ export class GroqSTTProvider implements STTProvider {
     formData.append('model', this.model);
     formData.append('language', options.language || 'pt');
     formData.append('response_format', 'verbose_json');
+    formData.append('temperature', '0.0');
 
-    if (options.prompt) {
-      formData.append('prompt', options.prompt);
-    }
+    const promptContext = options.prompt || 'EVA, assistente virtual inteligente em português do Brasil. Comandos de voz, perguntas rápidas e conversas.';
+    formData.append('prompt', promptContext);
 
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
       method: 'POST',

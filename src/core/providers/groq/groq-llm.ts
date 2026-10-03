@@ -59,7 +59,10 @@ export class GroqLLMProvider implements LLMProvider {
       payload.stream = true;
     }
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    let activeModel = this.model;
+    payload.model = activeModel;
+
+    let response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -68,6 +71,29 @@ export class GroqLLMProvider implements LLMProvider {
       body: JSON.stringify(payload),
       signal: options.signal,
     });
+
+    if (response.status === 429 || response.status === 503) {
+      const fallbackModel = (activeModel === 'qwen/qwen3.8-27b') ? 'openai/gpt-oss-20b' : 'qwen/qwen3.8-27b';
+      console.warn(`[GroqLLMProvider] Rate limit / indisponibilidade (${response.status}) no modelo '${activeModel}'. Alternando automaticamente para '${fallbackModel}'...`);
+      payload.model = fallbackModel;
+      try {
+        const retryRes = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          signal: options.signal,
+        });
+        if (retryRes && retryRes.ok) {
+          response = retryRes;
+          activeModel = fallbackModel;
+        } else if (retryRes) {
+          response = retryRes;
+        }
+      } catch {}
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -168,7 +194,7 @@ export class GroqLLMProvider implements LLMProvider {
           outputTokens: Math.max(1, Math.round(fullContent.length / 4)),
         },
         provider: this.name,
-        model: this.model,
+        model: activeModel,
         latencyMs,
       };
     }
@@ -209,7 +235,7 @@ export class GroqLLMProvider implements LLMProvider {
         outputTokens: data.usage?.completion_tokens ?? 0,
       },
       provider: this.name,
-      model: this.model,
+      model: activeModel,
       latencyMs,
     };
   }
