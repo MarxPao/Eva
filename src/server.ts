@@ -1093,9 +1093,35 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/bt/connect' && req.method === 'POST') {
     if (espWsClient && isEspWsConnected) {
       try {
-        espWsClient.send(JSON.stringify({ cmd: 'connect_bt' }));
+        let mac: string | undefined;
+        let name: string | undefined;
+        try {
+          const raw = await parseBody(req);
+          const body = JSON.parse(raw.toString('utf8') || '{}');
+          mac = body.mac;
+          name = body.name;
+        } catch {}
+        espWsClient.send(JSON.stringify({ cmd: 'connect_bt', mac, name }));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'Comando de conexão enviado ao ESP32' }));
+        res.end(JSON.stringify({ success: true, message: 'Comando de conexão enviado ao ESP32', mac, name }));
+        return;
+      } catch (err: any) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
+    }
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'ESP32 não conectado no momento' }));
+    return;
+  }
+
+  if (pathname === '/api/bt/scan' && req.method === 'POST') {
+    if (espWsClient && isEspWsConnected) {
+      try {
+        espWsClient.send(JSON.stringify({ cmd: 'scan_bt' }));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Comando de busca de dispositivos enviado ao ESP32' }));
         return;
       } catch (err: any) {
         res.writeHead(500, { 'Content-Type': 'application/json' });

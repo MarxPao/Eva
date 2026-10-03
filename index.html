@@ -1602,8 +1602,11 @@
             <button class="sm-btn" id="sm-btn-copy" onclick="copySerialLog()" title="Copiar logs para área de transferência">
               <span>📋</span> <span id="sm-copy-text">Copiar</span>
             </button>
-            <button class="sm-btn" onclick="triggerBtConnect()" title="Solicitar conexão direta com a caixa de som Bluetooth">
-              <span>🔊</span> <span>Conectar BT</span>
+            <button class="sm-btn" onclick="triggerBtConnect()" title="Buscar e conectar à caixa de som Bluetooth">
+              <span>🔊</span> <span>Parear / Conectar BT</span>
+            </button>
+            <button class="sm-btn" onclick="triggerBtScan()" title="Escanear dispositivos Bluetooth próximos">
+              <span>📡</span> <span>Buscar Dispositivos</span>
             </button>
             <button class="sm-btn" onclick="reconnectESP32()" title="Forçar reconexão WebSocket com o ESP32">
               <span>🔄</span> <span>Reconectar</span>
@@ -2249,7 +2252,8 @@
             const devName = data.name || '<desconhecido>';
             const devMac = data.mac || '';
             const devRssi = data.rssi || 0;
-            appendSerialLog('BT-SCAN', `📡 Dispositivo detectado: "${devName}" (${devMac}) · Sinal: ${devRssi} dBm`, 'bt');
+            const logHtml = `📡 Dispositivo: "<strong>${devName}</strong>" (${devMac}) · Sinal: ${devRssi} dBm <button style="background:var(--accent-sage); color:#fff; border:none; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; margin-left:6px;" onclick="triggerBtConnect('${devMac}')">Parear</button>`;
+            appendSerialLog('BT-SCAN', logHtml, 'bt', true);
             return;
           }
 
@@ -2361,18 +2365,35 @@
       }
     }
 
-    async function triggerBtConnect() {
-      appendSerialLog('BT', 'Tentando conectar à caixa de som Bluetooth (SoundCore mini2)...', 'bt');
+    async function triggerBtConnect(targetMac) {
+      appendSerialLog('BT', targetMac ? `Conectando ao dispositivo ${targetMac}...` : 'Iniciando busca e pareamento Bluetooth no ESP32...', 'bt');
       try {
-        const res = await fetch('/api/bt/connect', { method: 'POST' });
+        const res = await fetch('/api/bt/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(targetMac ? { mac: targetMac } : {})
+        });
         const data = await res.json();
         if (data.success) {
-          appendSerialLog('BT', 'Comando de conexão direta enviado ao hardware ESP32.', 'sys');
+          appendSerialLog('BT', 'Comando enviado ao ESP32 com sucesso.', 'sys');
         } else {
           appendSerialLog('BT', `Aviso ao conectar BT: ${data.error || 'Falha'}`, 'err');
         }
       } catch (err) {
         appendSerialLog('BT', `Erro na chamada /api/bt/connect: ${err.message}`, 'err');
+      }
+    }
+
+    async function triggerBtScan() {
+      appendSerialLog('BT', 'Iniciando varredura por dispositivos Bluetooth próximos...', 'bt');
+      try {
+        const res = await fetch('/api/bt/scan', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          appendSerialLog('BT', 'Varredura iniciada! Coloque a caixinha em modo de pareamento.', 'sys');
+        }
+      } catch (err) {
+        appendSerialLog('BT', `Erro na chamada /api/bt/scan: ${err.message}`, 'err');
       }
     }
 

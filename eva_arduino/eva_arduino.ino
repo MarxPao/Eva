@@ -51,7 +51,8 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
   // 1 = liga A2DP para a caixa de som com o ID 'BT-SPEAKER'; 0 = Bluetooth desligado
   #define BT_ENABLED 1
   const char* BT_SPEAKER_NAME = "BT-SPEAKER";
-  static esp_bd_addr_t TARGET_BT_MAC = {0xF4, 0x4E, 0xFD, 0x9A, 0xAB, 0x42};
+  static esp_bd_addr_t targetBtMac = {0};
+  static bool hasTargetMac = false;
 
   // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (4KB = ~23ms a 44.1kHz estéreo)
   #define TTS_BUFFER_SIZE (4 * 1024)
@@ -139,22 +140,28 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
                  lastScanMac, lastScanName, rssi);
     }
 
-    // 1. Match direto pelo MAC conhecido da SoundCore mini2
-    if (address[0] == 0xF4 && address[1] == 0x4E && address[2] == 0xFD &&
-        address[3] == 0x9A && address[4] == 0xAB && address[5] == 0x42) {
-      LOG_PRINTLN("\n[BT-SCAN] 🎯 ALVO ENCONTRADO POR MAC (F4:4E:FD:9A:AB:42 - SoundCore mini2)! Conectando A2DP...\n");
+    // 1. Match direto se um MAC foi explicitamente configurado pelo usuário
+    if (hasTargetMac && memcmp(targetBtMac, address, ESP_BD_ADDR_LEN) == 0) {
+      LOG_PRINTF("\n[BT-SCAN] 🎯 ALVO ENCONTRADO POR MAC CONFIGURADO (%s)! Conectando A2DP...\n", lastScanMac);
       return true;
     }
 
-    // 2. Match por Nome do dispositivo (case-insensitive)
+    // 2. Match por Nome do dispositivo (case-insensitive) para caixas de som comuns
     if (ssid != nullptr && strlen(ssid) > 0) {
       if (strcasestr(ssid, "BT-SPEAKER") != nullptr ||
           strcasestr(ssid, "BT_SPEAKER") != nullptr ||
           strcasestr(ssid, "SPEAKER") != nullptr ||
           strcasestr(ssid, "SOUNDCORE") != nullptr ||
           strcasestr(ssid, "MINI") != nullptr ||
-          strcasestr(ssid, "CAIXA") != nullptr) {
-        LOG_PRINTF("\n[BT-SCAN] 🎯 ALVO ENCONTRADO: '%s'! Conectando A2DP...\n", ssid);
+          strcasestr(ssid, "CAIXA") != nullptr ||
+          strcasestr(ssid, "SOM") != nullptr ||
+          strcasestr(ssid, "BOOMBOX") != nullptr ||
+          strcasestr(ssid, "JBL") != nullptr ||
+          strcasestr(ssid, "AUDIO") != nullptr ||
+          strcasestr(ssid, "MUSIC") != nullptr ||
+          strcasestr(ssid, "WIRELESS") != nullptr ||
+          strcasestr(ssid, "BOX") != nullptr) {
+        LOG_PRINTF("\n[BT-SCAN] 🎯 ALVO ENCONTRADO POR NOME: '%s' (%s)! Conectando A2DP...\n", ssid, lastScanMac);
         return true;
       }
     }
@@ -162,6 +169,7 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
   }
 
   static volatile bool btStateChanged = false;
+  extern unsigned long speakerMuteUntil;
   void a2dp_connection_state_changed(esp_a2d_connection_state_t state, void* obj) {
     if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
       isBtSpeakerConnected = true;
@@ -172,7 +180,9 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
     } else if (state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
       isBtSpeakerConnected = false;
       btStateChanged = true;
-      LOG_PRINTLN("\n[BT-A2DP] ⚠️ Caixa de som desconectada. Tentando reconectar...");
+      ttsBufferClear();
+      speakerMuteUntil = 0;
+      LOG_PRINTLN("\n[BT-A2DP] ⚠️ Caixa de som desconectada. Buffer TTS limpo e VAD 100% ativo.");
     }
   }
 #endif
@@ -332,10 +342,17 @@ void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
     int durIdx = response.indexOf("\"durationMs\":");
     if (durIdx >= 0) {
       unsigned long dur = response.substring(durIdx + 13).toInt();
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+      if (dur >= 2000 && dur <= 60000 && isBtSpeakerConnected) {
+        speakerMuteUntil = millis() + dur;
+        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur);
+      }
+#else
       if (dur >= 2000 && dur <= 60000) {
         speakerMuteUntil = millis() + dur;
         LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur);
       }
+#endif
     }
   } else {
     LOG_PRINTF("[EVA] ⚠️ Erro HTTP ao enviar voz: %d (%s)\n", httpCode, http.errorToString(httpCode).c_str());
@@ -406,8 +423,10 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
     case WStype_BIN: {
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
       // Áudio PCM 44.1kHz estéreo recebido para tocar na caixa Bluetooth
-      if (payload != nullptr && length > 0) {
+      if (isBtSpeakerConnected && payload != nullptr && length > 0) {
         ttsBufferPush(payload, length);
+      } else {
+        ttsBufferClear();
       }
 #endif
       break;
@@ -422,8 +441,27 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
         LOG_PRINTLN("[BARGE-IN] ⚡ Interrupção de fala recebida! Buffer A2DP limpo e VAD reativado imediatamente.");
       } else if (msg.indexOf("\"cmd\":\"connect_bt\"") >= 0 || msg.indexOf("\"connect_bt\"") >= 0) {
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-        LOG_PRINTLN("[BT-A2DP] 🔄 Solicitação de conexão Bluetooth recebida via WebSocket! Conectando diretamente ao MAC...");
-        if (BT_ENABLED) a2dp_source.connect_to(TARGET_BT_MAC);
+        int macIdx = msg.indexOf("\"mac\":\"");
+        if (macIdx >= 0) {
+          String macStr = msg.substring(macIdx + 7, macIdx + 24);
+          unsigned int b[6];
+          if (sscanf(macStr.c_str(), "%x:%x:%x:%x:%x:%x", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]) == 6) {
+            for (int i = 0; i < 6; i++) targetBtMac[i] = (uint8_t)b[i];
+            hasTargetMac = true;
+            LOG_PRINTF("[BT-A2DP] 🔄 Conectando diretamente ao MAC alvo: %s\n", macStr.c_str());
+            a2dp_source.connect_to(targetBtMac);
+          }
+        } else {
+          LOG_PRINTLN("[BT-A2DP] 🔄 Iniciando varredura e pareamento de caixas Bluetooth...");
+          a2dp_source.cancel_discovery();
+          esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+        }
+#endif
+      } else if (msg.indexOf("\"cmd\":\"scan_bt\"") >= 0 || msg.indexOf("\"scan_bt\"") >= 0) {
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+        LOG_PRINTLN("[BT-A2DP] 📡 Varredura solicitada. Iniciando busca GAP...");
+        a2dp_source.cancel_discovery();
+        esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
 #endif
       } else if (msg.indexOf("\"cmd\":\"get_bt_status\"") >= 0 || msg.indexOf("\"get_bt_status\"") >= 0) {
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -448,8 +486,17 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
             unsigned long parsed = msg.substring(durIdx + 13).toInt();
             if (parsed >= 1000 && parsed <= 60000) dur = parsed;
           }
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+          if (isBtSpeakerConnected) {
+            speakerMuteUntil = millis() + dur;
+            LOG_PRINTF("[AEC] 🔊 Alto-falante ativo. Janela de áudio: %lu ms.\n", dur);
+          } else {
+            speakerMuteUntil = 0;
+          }
+#else
           speakerMuteUntil = millis() + dur;
           LOG_PRINTF("[AEC] 🔊 Alto-falante ativo. Janela de áudio: %lu ms.\n", dur);
+#endif
         } else {
           speakerMuteUntil = 0;
           LOG_PRINTLN("[AEC] 🔈 Alto-falante finalizado. VAD pronto.");
@@ -574,18 +621,19 @@ void setup() {
   }
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-  esp_coex_preference_set(ESP_COEX_PREFER_WIFI);
+  esp_coex_preference_set(ESP_COEX_PREFER_BALANCE);
   ttsRingBuffer = (uint8_t*)malloc(TTS_BUFFER_SIZE);
   if (ttsRingBuffer != nullptr) {
     LOG_PRINTF("[MEM] ✅ Buffer A2DP alocado: %d bytes (%.1f KB)\n", TTS_BUFFER_SIZE, TTS_BUFFER_SIZE / 1024.0);
   }
 
 #if BT_ENABLED
+  a2dp_source.set_ssp_enabled(true);
   a2dp_source.set_ssid_callback(bt_ssid_callback);
   a2dp_source.set_on_connection_state_changed(a2dp_connection_state_changed);
-  a2dp_source.set_auto_reconnect(TARGET_BT_MAC, 100);
+  a2dp_source.set_auto_reconnect(true, 3);
   a2dp_source.start(BT_SPEAKER_NAME, a2dp_data_callback);
-  LOG_PRINTF("[BT-A2DP] 🎵 A2DP Source iniciado buscando '%s'...\n", BT_SPEAKER_NAME);
+  LOG_PRINTF("[BT-A2DP] 🎵 A2DP Source iniciado buscando '%s' (SSP ativo)...\n", BT_SPEAKER_NAME);
 #else
   LOG_PRINTLN("[BT-A2DP] ⏸️ Bluetooth DESLIGADO (BT_ENABLED=0) para estabilizar Wi-Fi.");
 #endif
@@ -600,7 +648,6 @@ void loop() {
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
   static unsigned long lastBtCheck = 0;
-  static unsigned long lastBtDirectConnect = 0;
   if (millis() - lastBtCheck > 1500) {
     lastBtCheck = millis();
     bool curBtConn = a2dp_source.is_connected();
@@ -608,12 +655,10 @@ void loop() {
       isBtSpeakerConnected = curBtConn;
       btStateChanged = true;
     }
-  }
-
-  // Tenta conexão direta periódica ao MAC da caixa SoundCore mini2 a cada 8 segundos se não conectada
-  if (BT_ENABLED && !isBtSpeakerConnected && millis() - lastBtDirectConnect > 8000) {
-    lastBtDirectConnect = millis();
-    a2dp_source.connect_to(TARGET_BT_MAC);
+    // Se desconectado, limpa qualquer resíduo do buffer TTS para não travar o VAD
+    if (!isBtSpeakerConnected && ttsBufferAvailable() > 0) {
+      ttsBufferClear();
+    }
   }
 
   if (btStateChanged) {
@@ -717,10 +762,10 @@ void loop() {
       }
       prerollHead = (prerollHead + pairs) % PREROLL_SAMPLES;
 
-      // Limiar dinâmico de VAD com AEC: se a EVA estiver falando pela caixa BT,
-      // eleva o limiar para 2600 RMS para que o som da caixa não dispare o microfone
+      // Limiar dinâmico de VAD com AEC: se a EVA estiver falando pela caixa BT conectada,
+      // eleva o limiar para 3200 RMS para que o som da caixa não dispare o microfone
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-      bool isSpeakerActive = (millis() < speakerMuteUntil) || (ttsBufferAvailable() > 0);
+      bool isSpeakerActive = isBtSpeakerConnected && ((millis() < speakerMuteUntil) || (ttsBufferAvailable() > 0));
 #else
       bool isSpeakerActive = (millis() < speakerMuteUntil);
 #endif
