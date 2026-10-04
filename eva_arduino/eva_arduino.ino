@@ -15,7 +15,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WebSocketsClient.h>
-#include "driver/i2s.h"
+#include "driver/i2s_std.h"
+#include "esp_task_wdt.h"
 #include <math.h>
 #include "esp_system.h"
 #include <Preferences.h>
@@ -288,19 +289,11 @@ void printMemoryReport(const char* tag) {
 
 #define I2S_SAMPLE_RATE     16000
 #define BUFFER_PAIRS        256 // 256 pares (512 samples) = 16ms por leitura
-
-// Gravação de voz: até 2.0 segundos local (fallback HTTP) e até 10.0s via WebSocket
-#define MAX_RECORD_SECONDS        2.0f
-#define MAX_RECORD_SAMPLES        (int)(16000 * MAX_RECORD_SECONDS) // 32.000 amostras
 #define MAX_STREAM_RECORD_SAMPLES 160000 // Até 10.0 segundos de fala contínua via WebSocket
-#define WAV_HEADER_SIZE           44
-#define MAX_RECORD_BYTES          (WAV_HEADER_SIZE + MAX_RECORD_SAMPLES * 2) // 64.044 bytes
 
+static i2s_chan_handle_t rx_chan = NULL;
 WebSocketsClient webSocket;
 int32_t audioBuffer[BUFFER_PAIRS * 2]; // Captura Stereo (Left/Right mic)
-
-uint8_t* wavBuffer = nullptr;
-uint32_t maxRecordSamples = 64000;
 uint32_t recordedSamples = 0;
 
 enum MicState {
@@ -347,160 +340,42 @@ static int16_t linPreroll[PREROLL_SAMPLES];
 
 unsigned long speakerMuteUntil = 0;
 
-void sendBluetoothCommand(const String& cmd) {
-  LOG_PRINTF("[BT-CMD] %s\n", cmd.c_str());
-}
-
-void fillWavHeader(uint8_t* header, uint32_t pcmDataBytes) {
-  if (header == nullptr) return;
-  uint32_t totalDataLen = pcmDataBytes;
-  uint32_t totalFileLen = totalDataLen + 36;
-  uint32_t sampleRate = 16000;
-  uint16_t channels = 1;
-  uint16_t bitsPerSample = 16;
-  uint32_t byteRate = sampleRate * channels * (bitsPerSample / 8);
-  uint16_t blockAlign = channels * (bitsPerSample / 8);
-
-  header[0] = 'R'; header[1] = 'I'; header[2] = 'F'; header[3] = 'F';
-  header[4] = (uint8_t)(totalFileLen & 0xff);
-  header[5] = (uint8_t)((totalFileLen >> 8) & 0xff);
-  header[6] = (uint8_t)((totalFileLen >> 16) & 0xff);
-  header[7] = (uint8_t)((totalFileLen >> 24) & 0xff);
-  header[8] = 'W'; header[9] = 'A'; header[10] = 'V'; header[11] = 'E';
-  header[12] = 'f'; header[13] = 'm'; header[14] = 't'; header[15] = ' ';
-  header[16] = 16; header[17] = 0; header[18] = 0; header[19] = 0;
-  header[20] = 1; header[21] = 0; // PCM
-  header[22] = (uint8_t)channels; header[23] = 0;
-  header[24] = (uint8_t)(sampleRate & 0xff);
-  header[25] = (uint8_t)((sampleRate >> 8) & 0xff);
-  header[26] = (uint8_t)((sampleRate >> 16) & 0xff);
-  header[27] = (uint8_t)((sampleRate >> 24) & 0xff);
-  header[28] = (uint8_t)(byteRate & 0xff);
-  header[29] = (uint8_t)((byteRate >> 8) & 0xff);
-  header[30] = (uint8_t)((byteRate >> 16) & 0xff);
-  header[31] = (uint8_t)((byteRate >> 24) & 0xff);
-  header[32] = (uint8_t)blockAlign; header[33] = 0;
-  header[34] = (uint8_t)bitsPerSample; header[35] = 0;
-  header[36] = 'd'; header[37] = 'a'; header[38] = 't'; header[39] = 'a';
-  header[40] = (uint8_t)(totalDataLen & 0xff);
-  header[41] = (uint8_t)((totalDataLen >> 8) & 0xff);
-  header[42] = (uint8_t)((totalDataLen >> 16) & 0xff);
-  header[43] = (uint8_t)((totalDataLen >> 24) & 0xff);
-}
-
-void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
-  if (wavBuffer == nullptr) {
-    LOG_PRINTLN("[EVA] ⚠️ wavBuffer é nulo, ignorando HTTP POST.");
-    return;
-  }
-  if (WiFi.status() != WL_CONNECTED) {
-    LOG_PRINTLN("[EVA] Wi-Fi desconectado. Cancelando envio de áudio.");
-    return;
-  }
-  if (recordedSamples < MIN_RECORDED_SAMPLES) { // menos de 0.5s de gravação
-    LOG_PRINTF("[EVA] Áudio muito curto (%u amostras). Descartado.\n", recordedSamples);
-    return;
-  }
-
-  uint32_t pcmBytes = recordedSamples * 2;
-  fillWavHeader(wavBuffer, pcmBytes);
-  uint32_t totalWavBytes = WAV_HEADER_SIZE + pcmBytes;
-
-  LOG_PRINTF("[EVA] 🚀 Enviando %u bytes (%.2fs de áudio WAV) para EVA via HTTP POST...\n", 
-             totalWavBytes, (float)recordedSamples / 16000.0f);
-
-  HTTPClient http;
-  http.begin(serverVoiceUrl.c_str());
-  http.addHeader("Content-Type", "audio/wav");
-  if (t0_cutoff > 0) {
-    http.addHeader("X-VAD-Cutoff-Elapsed-Ms", String(millis() - t0_cutoff));
-  }
-  http.setTimeout(15000); // 15s para dar tempo ao Whisper STT + LLM + TTS
-
-  int httpCode = http.POST(wavBuffer, totalWavBytes);
-  if (httpCode == HTTP_CODE_OK || httpCode == 200) {
-    String response = http.getString();
-    LOG_PRINTF("[EVA] 🤖 Resposta recebida da EVA (HTTP %d):\n%s\n", httpCode, response.c_str());
-
-    // 1. Envia a resposta verbal da EVA via Bluetooth Serial
-    int replyIdx = response.indexOf("\"reply\":");
-    if (replyIdx >= 0) {
-      int replyStart = response.indexOf("\"", replyIdx + 8);
-      if (replyStart >= 0) {
-        int replyEnd = response.indexOf("\"", replyStart + 1);
-        if (replyEnd > replyStart) {
-          String replyText = response.substring(replyStart + 1, replyEnd);
-          sendBluetoothCommand("EVA:" + replyText);
-        }
-      }
-    }
-
-    // 2. Extrai e envia execuções de ferramentas/comandos IoT via Bluetooth Serial
-    int toolIdx = response.indexOf("\"toolExecutions\":");
-    if (toolIdx >= 0) {
-      int toolEnd = response.indexOf("]", toolIdx);
-      if (toolEnd > toolIdx) {
-        String toolsJson = response.substring(toolIdx, toolEnd + 1);
-        LOG_PRINTF("[BT] ⚙️ Comando de ferramenta detectado: %s\n", toolsJson.c_str());
-        sendBluetoothCommand("CMD:" + toolsJson);
-      }
-    }
-
-    int durIdx = response.indexOf("\"durationMs\":");
-    if (durIdx >= 0) {
-      unsigned long dur = response.substring(durIdx + 13).toInt();
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-      if (dur >= 2000 && dur <= 60000 && isBtSpeakerConnected) {
-        speakerMuteUntil = millis() + dur + 500;
-        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur + 500);
-      }
-#else
-      if (dur >= 2000 && dur <= 60000) {
-        speakerMuteUntil = millis() + dur + 500;
-        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur + 500);
-      }
-#endif
-    }
-  } else {
-    LOG_PRINTF("[EVA] ⚠️ Erro HTTP ao enviar voz: %d (%s)\n", httpCode, http.errorToString(httpCode).c_str());
-  }
-  http.end();
-
-  // Limpa o DMA buffer do I2S para não processar eco antigo
-  i2s_zero_dma_buffer(I2S_NUM_0);
-}
-
 void i2sMicInit() {
-  i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-    .sample_rate = I2S_SAMPLE_RATE,
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 4,
-    .dma_buf_len = 256,
-    .use_apll = false,
-    .tx_desc_auto_clear = false,
-    .fixed_mclk = 0
-  };
-
-  i2s_pin_config_t pin_config = {
-    .bck_io_num = I2S_SCK_PIN,
-    .ws_io_num = I2S_WS_PIN,
-    .data_out_num = I2S_PIN_NO_CHANGE,
-    .data_in_num = I2S_SD_PIN
-  };
-
-  esp_err_t err = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+  chan_cfg.dma_desc_num = 4;
+  chan_cfg.dma_frame_num = 256;
+  esp_err_t err = i2s_new_channel(&chan_cfg, NULL, &rx_chan);
   if (err != ESP_OK) {
-    LOG_PRINTF("[I2S] ERRO na instalação do driver: 0x%04x\n", err);
+    LOG_PRINTF("[I2S] ERRO ao alocar novo canal I2S STD: 0x%04x\n", err);
     return;
   }
 
-  err = i2s_set_pin(I2S_NUM_0, &pin_config);
+  i2s_std_config_t std_cfg = {
+    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(I2S_SAMPLE_RATE),
+    .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
+    .gpio_cfg = {
+      .mclk = I2S_GPIO_UNUSED,
+      .bclk = (gpio_num_t)I2S_SCK_PIN,
+      .ws = (gpio_num_t)I2S_WS_PIN,
+      .dout = I2S_GPIO_UNUSED,
+      .din = (gpio_num_t)I2S_SD_PIN,
+      .invert_flags = {
+        .mclk_inv = false,
+        .bclk_inv = false,
+        .ws_inv = false,
+      },
+    },
+  };
+
+  err = i2s_channel_init_std_mode(rx_chan, &std_cfg);
   if (err != ESP_OK) {
-    LOG_PRINTF("[I2S] ERRO ao atribuir pinos: 0x%04x\n", err);
+    LOG_PRINTF("[I2S] ERRO na inicialização modo STD: 0x%04x\n", err);
+    return;
+  }
+
+  err = i2s_channel_enable(rx_chan);
+  if (err != ESP_OK) {
+    LOG_PRINTF("[I2S] ERRO ao habilitar canal I2S STD: 0x%04x\n", err);
     return;
   }
 
@@ -512,7 +387,7 @@ void i2sMicInit() {
   gpio_matrix_out(15, I2S0I_WS_OUT_IDX, false, false);
 #endif
 
-  LOG_PRINTLN("[I2S] Microfone inicializado com captura estéreo (WS no GPIO 25 + espelho GPIO 15).");
+  LOG_PRINTLN("[I2S] Microfone inicializado via driver/i2s_std.h (novo padrão IDF 5 / Core 3.x).");
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
@@ -938,9 +813,23 @@ void setup() {
   size_t freeHeap = esp_get_free_heap_size();
   LOG_PRINTF("[MEM] 🏁 Setup concluído! Heap livre pós-BT: %u bytes\n", freeHeap);
   printMemoryReport("SETUP_DONE");
+
+  // Configuração do Task Watchdog (TWDT) - Timeout de 15 segundos para proteger contra travamentos
+  esp_task_wdt_config_t twdt_config = {
+    .timeout_ms = 15000,
+    .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+    .trigger_panic = true
+  };
+  esp_err_t wdtErr = esp_task_wdt_reconfigure(&twdt_config);
+  if (wdtErr != ESP_OK) {
+    esp_task_wdt_init(&twdt_config);
+  }
+  esp_task_wdt_add(NULL); // Monitora a task principal do loop
+  LOG_PRINTLN("[WDT] 🛡️ Task Watchdog ativo (15s timeout) na task principal.");
 }
 
 void loop() {
+  esp_task_wdt_reset();
   webSocket.loop();
 
   static unsigned long lastMemReport = 0;
@@ -1002,7 +891,7 @@ void loop() {
 #endif
 
   size_t bytesRead = 0;
-  esp_err_t res = i2s_read(I2S_NUM_0, audioBuffer, sizeof(audioBuffer), &bytesRead, portMAX_DELAY);
+  esp_err_t res = i2s_channel_read(rx_chan, audioBuffer, sizeof(audioBuffer), &bytesRead, portMAX_DELAY);
 
   // Variáveis estáticas de controle de canal e filtro DC-Blocker
   static int activeMicChannel = 0; // 0 = Left, 1 = Right
@@ -1109,17 +998,8 @@ void loop() {
           webSocket.sendTXT("{\"type\":\"hw_status\",\"state\":\"recording\"}");
 
           // Copia o pré-roll para não perder o início da primeira palavra
-          if (wavBuffer != nullptr) {
-            int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
-            for (int i = 0; i < PREROLL_SAMPLES; i++) {
-              int16_t sample = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
-              pcm16[i] = sample;
-              linPreroll[i] = sample;
-            }
-          } else {
-            for (int i = 0; i < PREROLL_SAMPLES; i++) {
-              linPreroll[i] = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
-            }
+          for (int i = 0; i < PREROLL_SAMPLES; i++) {
+            linPreroll[i] = prerollBuffer[(prerollHead + i) % PREROLL_SAMPLES];
           }
           recordedSamples = PREROLL_SAMPLES;
 
@@ -1148,11 +1028,6 @@ void loop() {
         if (val > 32767) val = 32767;
         if (val < -32768) val = -32768;
         int16_t sample = (int16_t)val;
-
-        if (wavBuffer != nullptr && recordedSamples < maxRecordSamples) {
-          int16_t* pcm16 = (int16_t*)(wavBuffer + WAV_HEADER_SIZE);
-          pcm16[recordedSamples] = sample;
-        }
         recordedSamples++;
 
         streamChunkBuffer[streamChunkIndex++] = sample;
@@ -1184,8 +1059,7 @@ void loop() {
         silenceFrames = 0;
       }
 
-      uint32_t limitSamples = (webSocket.isConnected()) ? MAX_STREAM_RECORD_SAMPLES : maxRecordSamples;
-      if (recordedSamples >= limitSamples) {
+      if (recordedSamples >= MAX_STREAM_RECORD_SAMPLES) {
         micState = STATE_SENDING;
       }
     }
@@ -1231,13 +1105,7 @@ void loop() {
           speechFramesCount = 0;
           streamDroppedChunks = 0;
         } else {
-          // Fallback HTTP POST caso nenhum cliente WebSocket esteja conectado
-          if (wavBuffer != nullptr) {
-            webSocket.sendTXT("{\"type\":\"hw_status\",\"state\":\"sending\"}");
-            sendVoiceToBackend(t0_cutoff);
-          } else {
-            LOG_PRINTLN("[EVA] ⚠️ Sem cliente WebSocket conectado e sem buffer WAV; gravação descartada.");
-          }
+          LOG_PRINTLN("[EVA] ⚠️ Sem cliente WebSocket conectado; gravação descartada.");
           lastPostTime = millis();
           micState = STATE_IDLE;
           voiceDetectFrames = 0;
