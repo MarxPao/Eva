@@ -114,10 +114,10 @@ int voiceDetectFrames = 0;
 int silenceFrames = 0;
 unsigned long lastPostTime = 0;
 
-// VAD & Calibração Acústica de Alta Precisão (Rejeição de Ruído e Baixa Latência)
-#define NOISE_FLOOR_RMS           400.0f
-#define VAD_THRESHOLD_RMS         700.0f   // Fala humana clara (conversacional = 700-2500 RMS)
-#define VAD_SILENCE_RMS           480.0f   // Fim da fala (RMS cai abaixo de 480; evita cortar consoantes/fala suave)
+// VAD & Calibração Acústica de Alta Precisão (Rejeição de Ruído e Sensibilidade Aprimorada)
+#define NOISE_FLOOR_RMS           380.0f
+#define VAD_THRESHOLD_RMS         600.0f   // Fala humana clara / sensibilidade aprimorada (600-2500 RMS)
+#define VAD_SILENCE_RMS           420.0f   // Fim da fala (corte limpo sem truncar consoantes finais)
 #define VAD_TRIGGER_FRAMES        3        // 3 frames consecutivos (~48ms de voz sustentada)
 
 // Tempo de silêncio pós-fala otimizado para resposta ultra-rápida sub-1s (~272ms)
@@ -130,8 +130,8 @@ unsigned long lastPostTime = 0;
 #define VAD_BARGE_IN_THRESHOLD_RMS 4200.0f
 #define VAD_BARGE_IN_TRIGGER_FRAMES 6      // ~96ms de voz alta sustentada para Barge-In
 
-// Pré-roll circular de ~64ms (4 blocos de 256 amostras)
-#define PREROLL_FRAMES            4
+// Pré-roll circular de ~256ms (16 blocos de 256 amostras) — preserva 100% da primeira sílaba ("E-va")
+#define PREROLL_FRAMES            16
 #define PREROLL_SAMPLES           (PREROLL_FRAMES * BUFFER_PAIRS)
 int16_t prerollBuffer[PREROLL_SAMPLES];
 int prerollHead = 0;
@@ -586,9 +586,9 @@ void loop() {
       for (size_t i = 0; i < pairs; i++) {
         int32_t raw = (activeMicChannel == 0) ? (audioBuffer[i * 2] >> 14) : (audioBuffer[i * 2 + 1] >> 14);
 
-        // Filtro IIR DC-Blocker (corte ~13Hz): remove DC bias e ruídos de baixa frequência
+        // Filtro IIR Passa-Alta (~80Hz): remove DC bias, sopro de ar e ruídos subsônicos de mesa/rede
         float x = (float)raw;
-        float y = x - dcBlockerX + 0.995f * dcBlockerY;
+        float y = x - dcBlockerX + 0.970f * dcBlockerY;
         dcBlockerX = x;
         dcBlockerY = y;
         int32_t val = (int32_t)y;
@@ -642,8 +642,9 @@ void loop() {
       for (size_t i = 0; i < pairs; i++) {
         int32_t raw = (activeMicChannel == 0) ? (audioBuffer[i * 2] >> 14) : (audioBuffer[i * 2 + 1] >> 14);
 
+        // Filtro IIR Passa-Alta (~80Hz): remove DC bias e ruídos graves
         float x = (float)raw;
-        float y = x - dcBlockerX + 0.995f * dcBlockerY;
+        float y = x - dcBlockerX + 0.970f * dcBlockerY;
         dcBlockerX = x;
         dcBlockerY = y;
         int32_t val = (int32_t)y;

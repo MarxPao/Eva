@@ -32,7 +32,7 @@ import { ChatMessage } from './core/providers/types';
 import { ConfirmationRequest } from './core/tools/types';
 import { isWhisperNoise } from './core/agent/whisper-filter';
 import { PipelineTrace } from './core/instrumentation/trace-logger';
-import { addWavHeader, VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD } from './pipeline/audio-transport';
+import { addWavHeader, normalizePcmBuffer, VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD } from './pipeline/audio-transport';
 export { VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD };
 import { A2DPStreamer } from './core/audio/a2dp-streamer';
 
@@ -358,7 +358,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     const sttResult = await voicePipeline['sttOrchestrator'].execute(
       (stt) => stt.transcribe(audioBuffer, {
         language: 'pt',
-        prompt: 'Transcrição de áudio em português.',
+        prompt: 'Transcrição em português do Brasil para a assistente Eva: comandos de voz para Eva, clima, horas, dispositivos, lâmpadas, conversas cotidianas.',
       }),
       'Pipeline_Voice_STT'
     );
@@ -812,7 +812,8 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
 
             console.log(`[VAD Backend] ⚡ Fim de fala detectado por silêncio após ${Math.round(finishedSession.totalBytes / 32)}ms! Finalizando áudio.`);
             const pcmData = Buffer.concat(finishedSession.chunks);
-            const wavAudio = addWavHeader(pcmData, 16000, 1, 16);
+            const normalizedPcm = normalizePcmBuffer(pcmData);
+            const wavAudio = addWavHeader(normalizedPcm, 16000, 1, 16);
             finishedSession.trace.mark('t0', performance.now() - 256);
             if (finishedSession.t_first_chunk_received) {
               finishedSession.trace.mark('t1', finishedSession.t_first_chunk_received);
@@ -854,7 +855,8 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
               activeStreamSession = null;
               if (timedOut.totalBytes >= 1600) {
                 const pcmData = Buffer.concat(timedOut.chunks);
-                const wavAudio = addWavHeader(pcmData, 16000, 1, 16);
+                const normalizedPcm = normalizePcmBuffer(pcmData);
+                const wavAudio = addWavHeader(normalizedPcm, 16000, 1, 16);
                 await processVoiceAudioBuffer(wavAudio, timedOut.trace);
               } else {
                 broadcastToClients(JSON.stringify({
@@ -915,7 +917,8 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
           }
 
           const pcmData = Buffer.concat(session.chunks);
-          const wavAudio = addWavHeader(pcmData, 16000, 1, 16);
+          const normalizedPcm = normalizePcmBuffer(pcmData);
+          const wavAudio = addWavHeader(normalizedPcm, 16000, 1, 16);
           await processVoiceAudioBuffer(wavAudio, session.trace);
           return;
         }
