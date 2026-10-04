@@ -995,6 +995,9 @@ espWss.on('connection', (ws, req) => {
 });
 
 function startEsp32Bridge() {
+  // O ESP32 conecta de forma proativa ao servidor em ws://<PC_IP>:8080/api/esp32/ws.
+  // Ponte de saída para a porta 81 mantida apenas se expressamente habilitada.
+  if (process.env.ENABLE_PORT_81_BRIDGE !== 'true') return;
   if (isBridgeConnecting || isEspWsConnected) return;
   isBridgeConnecting = true;
 
@@ -1023,13 +1026,15 @@ function startEsp32Bridge() {
   }
 }
 
-// Inicia a ponte do ESP32 automaticamente com Watchdog contínuo
-startEsp32Bridge();
-setInterval(() => {
-  if (!isEspWsConnected && !isBridgeConnecting) {
-    startEsp32Bridge();
-  }
-}, 3000);
+// O ESP32 conecta como WebSocket client em /api/esp32/ws
+if (process.env.ENABLE_PORT_81_BRIDGE === 'true') {
+  startEsp32Bridge();
+  setInterval(() => {
+    if (!isEspWsConnected && !isBridgeConnecting) {
+      startEsp32Bridge();
+    }
+  }, 5000);
+}
 
 function parseBody(req: http.IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
