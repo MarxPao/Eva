@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addWavHeader } from '../../src/pipeline/audio-transport';
+import { addWavHeader, VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD } from '../../src/pipeline/audio-transport';
 import { PipelineTrace } from '../../src/core/instrumentation/trace-logger';
 
 describe('Streaming Audio Session (Task 1 Chunked Streaming)', () => {
@@ -56,5 +56,13 @@ describe('Streaming Audio Session (Task 1 Chunked Streaming)', () => {
     }
 
     expect(activeStreamSession).toBeNull();
+  });
+
+  it('deve calibrar tempo de silêncio do In-Flight VAD dentro da faixa recomendada de 600-800ms', () => {
+    expect(VAD_SILENCE_TIMEOUT_MS).toBeGreaterThanOrEqual(600);
+    expect(VAD_SILENCE_TIMEOUT_MS).toBeLessThanOrEqual(800);
+    // Cada chunk de 64ms: threshold deve corresponder à divisão
+    expect(VAD_SILENCE_CHUNKS_THRESHOLD).toBe(Math.round(VAD_SILENCE_TIMEOUT_MS / 64));
+    expect(VAD_SILENCE_CHUNKS_THRESHOLD).toBe(11);
   });
 });

@@ -306,7 +306,11 @@ unsigned long lastPostTime = 0;
 #define VAD_THRESHOLD_RMS         700.0f   // Fala humana clara (conversacional = 700-2500 RMS)
 #define VAD_SILENCE_RMS           480.0f   // Fim da fala (RMS cai abaixo de 480; evita cortar consoantes/fala suave)
 #define VAD_TRIGGER_FRAMES        3        // 3 frames consecutivos (~48ms de voz sustentada)
-#define VAD_SILENCE_FRAMES_END    88       // 88 frames de silêncio (~1408ms): espera o usuário terminar a frase
+
+// Tempo de silêncio pós-fala configurável (faixa ideal: 600-800ms)
+// Cada frame I2S = 256 amostras / 16kHz = 16.0ms. 700ms / 16ms = 43 frames (~688ms)
+#define VAD_SILENCE_TIMEOUT_MS    700      // Constante única configurável em milissegundos
+#define VAD_SILENCE_FRAMES_END    (VAD_SILENCE_TIMEOUT_MS / 16) // 43 frames (~688ms)
 #define MIN_SPEECH_FRAMES         4        // Pelo menos 4 frames (~64ms) de energia de voz
 #define MIN_RECORDED_SAMPLES      4800     // Pelo menos 300ms gravados
 

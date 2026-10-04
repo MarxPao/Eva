@@ -32,7 +32,8 @@ import { ChatMessage } from './core/providers/types';
 import { ConfirmationRequest } from './core/tools/types';
 import { isWhisperNoise } from './core/agent/whisper-filter';
 import { PipelineTrace } from './core/instrumentation/trace-logger';
-import { addWavHeader } from './pipeline/audio-transport';
+import { addWavHeader, VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD } from './pipeline/audio-transport';
+export { VAD_SILENCE_TIMEOUT_MS, VAD_SILENCE_CHUNKS_THRESHOLD };
 import { A2DPStreamer } from './core/audio/a2dp-streamer';
 
 const a2dpStreamer = new A2DPStreamer();
@@ -823,9 +824,9 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
           activeStreamSession.consecutiveSilenceChunks = 0;
         } else if (activeStreamSession.hasDetectedSpeech) {
           activeStreamSession.consecutiveSilenceChunks = (activeStreamSession.consecutiveSilenceChunks || 0) + 1;
-          // 22 chunks consecutivos de silêncio (~1408ms) e pelo menos 400ms gravados:
-          // Permite pausas naturais na fala, garantindo que o usuário termine a frase completamente antes de processar
-          if (activeStreamSession.consecutiveSilenceChunks >= 22 && activeStreamSession.totalBytes >= 6400) {
+          // Silêncio pós-fala configurável (VAD_SILENCE_CHUNKS_THRESHOLD chunks = ~700ms) e pelo menos 400ms gravados:
+          // Permite pausas naturais na fala, garantindo corte rápido sem truncar frases normais
+          if (activeStreamSession.consecutiveSilenceChunks >= VAD_SILENCE_CHUNKS_THRESHOLD && activeStreamSession.totalBytes >= 6400) {
             const finishedSession = activeStreamSession;
             if (finishedSession.safetyTimer) clearTimeout(finishedSession.safetyTimer);
             activeStreamSession = null;
