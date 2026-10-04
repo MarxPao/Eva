@@ -106,10 +106,23 @@ let ESP32_IP = process.env.ESP32_IP || '192.168.2.177';
 let lastBtConnected = false;
 let lastBtDeviceName = 'BT-SPEAKER';
 
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err.message);
+});
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[UNHANDLED REJECTION]', reason?.message || reason);
+});
+
 function broadcastToClients(data: string) {
+  const cleanData = (typeof data === 'string' ? data : JSON.stringify(data)).trim();
+  if (!cleanData) return;
   for (const client of sseClients) {
     try {
-      client.write(`data: ${data}\n\n`);
+      if (client.writable && !client.destroyed && !client.writableEnded) {
+        client.write(`data: ${cleanData}\n\n`);
+      } else {
+        sseClients.delete(client);
+      }
     } catch {
       sseClients.delete(client);
     }
@@ -781,6 +794,7 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
   }
 
   ws.on('message', async (data: any, isBinary: boolean) => {
+    console.log(`[ESP32 WS IN] isBinary=${isBinary} len=${data?.length || 0} preview=${data ? data.slice(0, 50).toString() : ''}`);
     let rawBuffer: Buffer | null = null;
     if (isBinary || Buffer.isBuffer(data)) {
       rawBuffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
@@ -1064,17 +1078,22 @@ const server = http.createServer(async (req, res) => {
   // API: Stream de Telemetria Serial do ESP32 via Server-Sent Events (SSE)
   // =========================================================================
   if (pathname === '/api/serial/stream' && req.method === 'GET') {
+    req.socket?.setNoDelay(true);
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
     });
 
     res.write(`data: ${JSON.stringify({ type: 'init', connected: isEspWsConnected, ip: ESP32_IP })}\n\n`);
     res.write(`data: ${JSON.stringify({ type: 'bt_state', connected: lastBtConnected, deviceName: lastBtDeviceName })}\n\n`);
     sseClients.add(res);
 
+    res.on('error', () => {
+      sseClients.delete(res);
+    });
     req.on('close', () => {
       sseClients.delete(res);
     });
