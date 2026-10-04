@@ -1532,19 +1532,15 @@
       </button>
 
       <!-- Conector / Seletor de Saída de Áudio (Caixa BT vs Notebook) -->
-      <div class="audio-connector-pill" id="audio-connector-pill" title="Conector de Saída de Áudio: Alternar entre Caixa Bluetooth (ESP32) e Alto-falante do Notebook (Testes)">
+      <div class="audio-connector-pill" id="audio-connector-pill" title="Saída de Áudio: Alto-falante do Computador / PC">
         <span class="audio-connector-label">Áudio:</span>
-        <button type="button" class="audio-out-btn active" id="btn-out-speaker" onclick="setAudioOutput('speaker')" title="Áudio toca exclusivamente na Caixinha Bluetooth (ESP32)">
-          <span>🔊</span>
-          <span>Caixa BT</span>
-        </button>
-        <button type="button" class="audio-out-btn" id="btn-out-notebook" onclick="setAudioOutput('notebook')" title="Áudio toca no Alto-falante do Notebook (Modo Testes)">
+        <button type="button" class="audio-out-btn active" id="btn-out-notebook" onclick="setAudioOutput('notebook')" title="Áudio toca nos alto-falantes do PC">
           <span>💻</span>
-          <span>Notebook</span>
+          <span>Alto-falante PC</span>
         </button>
-        <button type="button" class="audio-out-btn" id="btn-out-both" onclick="setAudioOutput('both')" title="Áudio toca em Ambos simultaneamente">
-          <span>🔀</span>
-          <span>Ambos</span>
+        <button type="button" class="audio-out-btn" id="btn-out-both" onclick="setAudioOutput('both')" title="Modo estendido de áudio">
+          <span>🔊</span>
+          <span>Ativo</span>
         </button>
       </div>
 
@@ -3012,20 +3008,19 @@
     // Roteador / Conector de Saída de Áudio (Etapa 1)
     // Opções: 'speaker' (Caixa Bluetooth / ESP32) | 'notebook' (Alto-falante do Notebook) | 'both' (Ambos)
     // =========================================================================
-    let audioOutputDestination = localStorage.getItem('eva_audio_destination') || 'speaker';
+    let savedDest = localStorage.getItem('eva_audio_destination');
+    let audioOutputDestination = (savedDest === 'speaker' || !savedDest) ? 'notebook' : savedDest;
 
     function setAudioOutput(destination) {
-      if (!['speaker', 'notebook', 'both'].includes(destination)) {
-        destination = 'speaker';
+      if (!['speaker', 'notebook', 'both'].includes(destination) || destination === 'speaker') {
+        destination = 'notebook';
       }
       audioOutputDestination = destination;
       localStorage.setItem('eva_audio_destination', destination);
 
       // Atualiza botões do cabeçalho
-      const btnSpeaker = document.getElementById('btn-out-speaker');
       const btnNotebook = document.getElementById('btn-out-notebook');
       const btnBoth = document.getElementById('btn-out-both');
-      if (btnSpeaker) btnSpeaker.classList.toggle('active', destination === 'speaker');
       if (btnNotebook) btnNotebook.classList.toggle('active', destination === 'notebook');
       if (btnBoth) btnBoth.classList.toggle('active', destination === 'both');
 
@@ -3132,27 +3127,7 @@
     function enqueueAudioChunk(base64Data) {
       if (!base64Data) return;
 
-      const playOnNotebook = (audioOutputDestination === 'notebook' || audioOutputDestination === 'both');
-      if (!playOnNotebook) {
-        // Roteamento Caixa BT: o áudio toca no ESP32, NÃO no navegador do notebook.
-        // Apenas sincroniza o estado visual do Orb e tag:
-        if (!state.isSpeaking) {
-          state.isSpeaking = true;
-          const orbEl = document.getElementById('orb-trigger');
-          if (orbEl) {
-            orbEl.classList.add('speaking');
-            orbEl.classList.remove('listening', 'thinking');
-          }
-          const tagEl = document.getElementById('voice-state-tag');
-          if (tagEl) {
-            tagEl.textContent = 'EVA falando (na Caixa BT)...';
-            tagEl.style.color = 'var(--text-primary)';
-          }
-        }
-        return;
-      }
-
-      // Modo Notebook ou Ambos: enfileira para reprodução local no navegador
+      unlockAudioContext();
       const audioUrl = `data:audio/mpeg;base64,${base64Data}`;
       audioQueue.push(audioUrl);
       if (!isPlayingQueue) {
@@ -3211,10 +3186,7 @@
       if (isPlayingQueue || state.isSpeaking) return;
       if (!replyText || !replyText.trim()) return;
 
-      const playOnNotebook = (audioOutputDestination === 'notebook' || audioOutputDestination === 'both');
-      if (!playOnNotebook) {
-        return; // Reprodução ocorre exclusivamente pela Caixa BT via ESP32
-      }
+      unlockAudioContext();
 
       try {
         state.isSpeaking = true;

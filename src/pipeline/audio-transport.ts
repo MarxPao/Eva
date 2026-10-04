@@ -46,5 +46,5 @@ export interface WsAudioChunkEvent {
  * Cada chunk tem 1024 amostras / 16kHz = 64ms.
  * 700ms / 64ms = 11 chunks (~704ms de silêncio pós-fala)
  */
-export const VAD_SILENCE_TIMEOUT_MS = 700; // Tempo de silêncio pós-fala configurável (faixa ideal: 600-800ms)
+export const VAD_SILENCE_TIMEOUT_MS = 700; // Tempo de silêncio pós-fala padrão (600-800ms)
 export const VAD_SILENCE_CHUNKS_THRESHOLD = Math.round(VAD_SILENCE_TIMEOUT_MS / 64); // 11 chunks (~704ms)
