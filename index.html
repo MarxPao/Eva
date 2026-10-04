@@ -11,6 +11,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <style>
     /* =========================================================================
        DESIGN SYSTEM — NOVA IDENTIDADE VISUAL EVA
@@ -1501,6 +1504,295 @@
       gap: 6px;
       flex-wrap: wrap;
     }
+
+    /* =========================================================================
+       CARD DE MÚSICA & PLAYER YOUTUBE COM AUDIO DUCKING
+       ========================================================================= */
+    .music-widget-card {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
+    }
+
+    .music-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .music-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .music-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+
+    .music-status-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .music-status-pill.playing {
+      background: rgba(109, 142, 103, 0.15);
+      color: var(--accent-sage);
+      border-color: var(--accent-sage);
+    }
+
+    .music-status-pill.paused {
+      background: rgba(199, 109, 91, 0.12);
+      color: var(--accent-coral);
+      border-color: var(--accent-coral);
+    }
+
+    .music-player-view {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+    }
+
+    .music-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      padding: 16px;
+      text-align: center;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    .music-placeholder-icon {
+      font-size: 32px;
+      opacity: 0.8;
+    }
+
+    .music-placeholder-text {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    .music-info-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .music-track-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .music-artist-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .music-ducking-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-coral);
+      background: rgba(199, 109, 91, 0.12);
+      border: 1px solid rgba(199, 109, 91, 0.3);
+      border-radius: 8px;
+      padding: 4px 8px;
+      margin-bottom: 10px;
+      animation: pulseDuck 1.5s infinite;
+    }
+
+    @keyframes pulseDuck {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .music-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .music-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .music-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .music-btn:hover {
+      background: var(--bg-pill-active);
+      border-color: var(--border-focus);
+    }
+
+    .music-btn.primary {
+      background: var(--accent-sage);
+      color: #fff;
+      border-color: var(--accent-sage);
+    }
+
+    .music-btn.primary:hover {
+      filter: brightness(1.08);
+    }
+
+    .music-vol-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 120px;
+      max-width: 150px;
+    }
+
+    .music-vol-slider {
+      flex: 1;
+      accent-color: var(--accent-sage);
+      cursor: pointer;
+      height: 4px;
+    }
+
+    .music-vol-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      width: 28px;
+      text-align: right;
+    }
+
+    /* MINI PLAYER FLUTUANTE INFERIOR (MOBILE / GLOBAL) */
+    .mobile-music-dock {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 440px;
+      background: var(--surface-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 10px 14px;
+      z-index: 99;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      animation: slideUpDock 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpDock {
+      from { transform: translate(-50%, 40px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    .mobile-music-dock.visible {
+      display: flex;
+    }
+
+    .dock-track-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .dock-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--bg-card);
+      flex-shrink: 0;
+    }
+
+    .dock-meta {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dock-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dock-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dock-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -1737,6 +2029,62 @@
            COLUNA 3 (DESKTOP): CASA INTELIGENTE, COMANDOS BLUETOOTH & TELEMETRIA
            ===================================================================== -->
       <div class="desktop-right-column" id="desktop-right-column">
+
+        <!-- CARD: PLAYER DE MÚSICA YOUTUBE & AUDIO DUCKING -->
+        <div class="music-widget-card" id="music-widget-card">
+          <div class="music-header">
+            <div class="music-title-wrap">
+              <span style="font-size: 16px;">🎵</span>
+              <h3 class="music-title">Música & YouTube</h3>
+            </div>
+            <span class="music-status-pill" id="music-status-pill">
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor;"></span>
+              <span id="music-status-text">Pronto</span>
+            </span>
+          </div>
+
+          <!-- Video / Player Container -->
+          <div class="music-player-view">
+            <div id="youtube-iframe-player"></div>
+            <div class="music-placeholder" id="music-placeholder">
+              <span class="music-placeholder-icon">🎧</span>
+              <span style="font-weight: 600; font-size: 13px;">Nenhuma música tocando</span>
+              <span class="music-placeholder-text">Peça à EVA por voz:<br><strong>"Eva, toca Yellow do Coldplay"</strong> ou <strong>"toca lofi"</strong></span>
+            </div>
+          </div>
+
+          <!-- Ducking Warning Badge -->
+          <div class="music-ducking-badge" id="music-ducking-indicator">
+            <span>🔉</span>
+            <span>Áudio ducking ativo (volume atenuado enquanto a EVA fala)</span>
+          </div>
+
+          <!-- Metadados da Faixa -->
+          <div class="music-info-meta">
+            <div class="music-track-name" id="music-track-name">Aguardando comando de voz...</div>
+            <div class="music-artist-name" id="music-artist-name">Peça qualquer música, artista ou playlist do YouTube</div>
+          </div>
+
+          <!-- Linha de Controles & Volume -->
+          <div class="music-controls-row">
+            <div class="music-btn-group">
+              <button class="music-btn primary" id="btn-music-play-pause" onclick="toggleMusicPlayPause()" title="Reproduzir / Pausar">
+                <span id="btn-music-play-icon">▶</span>
+                <span id="btn-music-play-text">Tocar</span>
+              </button>
+              <button class="music-btn" id="btn-music-stop" onclick="stopMusicPlayer()" title="Parar reprodução">
+                <span>⏹</span>
+                <span>Parar</span>
+              </button>
+            </div>
+
+            <div class="music-vol-wrap">
+              <span style="font-size: 13px;" title="Volume da Música">🔊</span>
+              <input type="range" class="music-vol-slider" id="music-vol-slider" min="0" max="100" value="80" oninput="changeMusicVolumeFromSlider(this.value)">
+              <span class="music-vol-label" id="music-vol-label">80%</span>
+            </div>
+          </div>
+        </div>
 
         <!-- CARD: CASA INTELIGENTE & ATUADORES -->
         <div class="side-widget-card">
@@ -2098,6 +2446,12 @@
         fan: false,
         lock: false
       },
+      music: {
+        isPlaying: false,
+        isPaused: false,
+        volume: 80,
+        currentTrack: null
+      },
       mediaRecorder: null,
       audioChunks: []
     };
@@ -2118,6 +2472,198 @@
     const smHudChan = document.getElementById('sm-hud-chan');
     const smHudState = document.getElementById('sm-hud-state');
     const smVuBarFill = document.getElementById('sm-vu-bar-fill');
+
+    // =========================================================================
+    // INTEGRAÇÃO PLAYER DE MÚSICA YOUTUBE & AUDIO DUCKING
+    // =========================================================================
+    let ytPlayer = null;
+    let isYtApiLoaded = false;
+    let pendingTrackToPlay = null;
+    let userMusicVolume = 80;
+    let isMusicDucked = false;
+
+    window.onYouTubeIframeAPIReady = function() {
+      isYtApiLoaded = true;
+      if (pendingTrackToPlay) {
+        initOrPlayYouTube(pendingTrackToPlay);
+        pendingTrackToPlay = null;
+      }
+    };
+
+    function initOrPlayYouTube(track) {
+      state.music.isPlaying = true;
+      state.music.isPaused = false;
+      state.music.currentTrack = track;
+
+      const placeholder = document.getElementById('music-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
+
+      updateMusicUiMetadata(track, 'playing');
+
+      if (!window.YT || !window.YT.Player) {
+        pendingTrackToPlay = track;
+        return;
+      }
+
+      if (!ytPlayer) {
+        ytPlayer = new YT.Player('youtube-iframe-player', {
+          height: '100%',
+          width: '100%',
+          videoId: track.videoId,
+          playerVars: {
+            autoplay: 1,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+          },
+          events: {
+            onReady: (event) => {
+              const targetVol = isMusicDucked ? Math.min(15, Math.round(userMusicVolume * 0.2)) : userMusicVolume;
+              event.target.setVolume(targetVol);
+              event.target.playVideo();
+            },
+            onStateChange: (event) => {
+              // YT.PlayerState: PLAYING (1), PAUSED (2), ENDED (0)
+              if (event.data === 1) {
+                state.music.isPlaying = true;
+                state.music.isPaused = false;
+                updateMusicUiStatus('playing');
+              } else if (event.data === 2) {
+                state.music.isPaused = true;
+                updateMusicUiStatus('paused');
+              } else if (event.data === 0) {
+                state.music.isPlaying = false;
+                state.music.isPaused = false;
+                updateMusicUiStatus('stopped');
+              }
+            }
+          }
+        });
+      } else {
+        ytPlayer.loadVideoById(track.videoId);
+        const targetVol = isMusicDucked ? Math.min(15, Math.round(userMusicVolume * 0.2)) : userMusicVolume;
+        ytPlayer.setVolume(targetVol);
+        ytPlayer.playVideo();
+      }
+    }
+
+    function updateMusicUiMetadata(track, status) {
+      const nameEl = document.getElementById('music-track-name');
+      const artistEl = document.getElementById('music-artist-name');
+      const dockTitle = document.getElementById('dock-title');
+      const dockSub = document.getElementById('dock-sub');
+      const dockThumb = document.getElementById('dock-thumb');
+      const dock = document.getElementById('mobile-music-dock');
+
+      if (nameEl) nameEl.textContent = track.title || 'Música do YouTube';
+      if (artistEl) artistEl.textContent = `${track.artist || 'YouTube'} · ${track.duration || ''}`;
+      if (dockTitle) dockTitle.textContent = track.title || 'Música do YouTube';
+      if (dockSub) dockSub.textContent = track.artist || 'YouTube';
+      if (dockThumb && track.thumbnail) dockThumb.src = track.thumbnail;
+      if (dock) dock.classList.add('visible');
+
+      updateMusicUiStatus(status);
+    }
+
+    function updateMusicUiStatus(status) {
+      const pill = document.getElementById('music-status-pill');
+      const pillText = document.getElementById('music-status-text');
+      const playIcon = document.getElementById('btn-music-play-icon');
+      const playText = document.getElementById('btn-music-play-text');
+      const dockIcon = document.getElementById('dock-play-icon');
+
+      if (status === 'playing') {
+        if (pill) pill.className = 'music-status-pill playing';
+        if (pillText) pillText.textContent = 'Tocando';
+        if (playIcon) playIcon.textContent = '⏸';
+        if (playText) playText.textContent = 'Pausar';
+        if (dockIcon) dockIcon.textContent = '⏸';
+      } else if (status === 'paused') {
+        if (pill) pill.className = 'music-status-pill paused';
+        if (pillText) pillText.textContent = 'Pausado';
+        if (playIcon) playIcon.textContent = '▶';
+        if (playText) playText.textContent = 'Continuar';
+        if (dockIcon) dockIcon.textContent = '▶';
+      } else {
+        if (pill) pill.className = 'music-status-pill';
+        if (pillText) pillText.textContent = 'Pronto';
+        if (playIcon) playIcon.textContent = '▶';
+        if (playText) playText.textContent = 'Tocar';
+        if (dockIcon) dockIcon.textContent = '▶';
+        const dock = document.getElementById('mobile-music-dock');
+        if (dock) dock.classList.remove('visible');
+      }
+    }
+
+    function toggleMusicPlayPause() {
+      if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+      const playerState = ytPlayer.getPlayerState();
+      if (playerState === 1) {
+        ytPlayer.pauseVideo();
+        fetch('/api/music/pause', { method: 'POST' }).catch(() => {});
+        updateMusicUiStatus('paused');
+      } else {
+        ytPlayer.playVideo();
+        fetch('/api/music/resume', { method: 'POST' }).catch(() => {});
+        updateMusicUiStatus('playing');
+      }
+    }
+
+    function stopMusicPlayer() {
+      if (ytPlayer && typeof ytPlayer.stopVideo === 'function') {
+        ytPlayer.stopVideo();
+      }
+      state.music.isPlaying = false;
+      state.music.isPaused = false;
+      fetch('/api/music/stop', { method: 'POST' }).catch(() => {});
+      const placeholder = document.getElementById('music-placeholder');
+      if (placeholder) placeholder.style.display = 'flex';
+      updateMusicUiStatus('stopped');
+      unduckMusic();
+    }
+
+    function changeMusicVolumeFromSlider(val) {
+      const vol = Number(val);
+      userMusicVolume = vol;
+      state.music.volume = vol;
+      const label = document.getElementById('music-vol-label');
+      if (label) label.textContent = `${vol}%`;
+      if (!isMusicDucked && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        ytPlayer.setVolume(vol);
+      }
+      fetch('/api/music/volume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volume: vol })
+      }).catch(() => {});
+    }
+
+    function duckMusic() {
+      if (ytPlayer && typeof ytPlayer.setVolume === 'function' && !isMusicDucked) {
+        isMusicDucked = true;
+        const duckVol = Math.min(15, Math.round(userMusicVolume * 0.2));
+        ytPlayer.setVolume(duckVol);
+        const badge = document.getElementById('music-ducking-indicator');
+        if (badge) badge.style.display = 'flex';
+      }
+    }
+
+    function unduckMusic() {
+      if (ytPlayer && typeof ytPlayer.setVolume === 'function' && isMusicDucked) {
+        isMusicDucked = false;
+        ytPlayer.setVolume(userMusicVolume);
+        const badge = document.getElementById('music-ducking-indicator');
+        if (badge) badge.style.display = 'none';
+      }
+    }
+
+    function scrollToMusicCard() {
+      const card = document.getElementById('music-widget-card');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
 
     function switchConfigTab(tabName) {
       document.querySelectorAll('.cfg-tab-btn').forEach(b => b.classList.remove('active'));
@@ -2836,6 +3382,44 @@
             handleConversationTurnEvent(data.entry);
             return;
           }
+
+          // 8. Eventos de Ação do Player de Música (YouTube)
+          if (data.type === 'music_player_action') {
+            if (data.action === 'play' && data.track) {
+              if (typeof data.volume === 'number') {
+                userMusicVolume = data.volume;
+                state.music.volume = data.volume;
+                const slider = document.getElementById('music-vol-slider');
+                const label = document.getElementById('music-vol-label');
+                if (slider) slider.value = data.volume;
+                if (label) label.textContent = `${data.volume}%`;
+              }
+              initOrPlayYouTube(data.track);
+              appendSerialLog('MEDIA', `🎵 Tocando no YouTube: "${data.track.title}"`, 'sys');
+            } else if (data.action === 'pause') {
+              if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') ytPlayer.pauseVideo();
+              updateMusicUiStatus('paused');
+              appendSerialLog('MEDIA', '⏸️ Música pausada.', 'sys');
+            } else if (data.action === 'resume') {
+              if (ytPlayer && typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
+              updateMusicUiStatus('playing');
+              appendSerialLog('MEDIA', '▶️ Música retomada.', 'sys');
+            } else if (data.action === 'stop') {
+              stopMusicPlayer();
+              appendSerialLog('MEDIA', '⏹️ Música parada.', 'sys');
+            } else if (data.action === 'volume' && typeof data.volume === 'number') {
+              userMusicVolume = data.volume;
+              state.music.volume = data.volume;
+              const slider = document.getElementById('music-vol-slider');
+              const label = document.getElementById('music-vol-label');
+              if (slider) slider.value = data.volume;
+              if (label) label.textContent = `${data.volume}%`;
+              if (!isMusicDucked && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                ytPlayer.setVolume(data.volume);
+              }
+            }
+            return;
+          }
         } catch (e) {
           console.warn('[SSE Parse Error]', e);
         }
@@ -2957,6 +3541,7 @@
       if (stateName === 'recording') {
         state.isRecording = true;
         state.isProcessing = false;
+        duckMusic();
         if (orbEl) {
           orbEl.classList.add('listening');
           orbEl.classList.remove('speaking', 'thinking');
@@ -2970,6 +3555,7 @@
       } else if (stateName === 'processing') {
         state.isRecording = false;
         state.isProcessing = true;
+        duckMusic();
         if (orbEl) {
           orbEl.classList.add('thinking');
           orbEl.classList.remove('listening', 'speaking');
@@ -2984,6 +3570,7 @@
         state.isRecording = false;
         state.isProcessing = false;
         if (!state.isSpeaking) {
+          unduckMusic();
           if (orbEl) {
             orbEl.classList.remove('listening', 'thinking', 'speaking');
             orbEl.style.transform = 'scale(1)';
@@ -3111,6 +3698,9 @@
       isPlayingQueue = false;
       state.isSpeaking = false;
       notifySpeakerState(false);
+      if (!state.isRecording) {
+        unduckMusic();
+      }
       const orbEl = document.getElementById('orb-trigger');
       if (orbEl) {
         orbEl.classList.remove('speaking');
@@ -3141,6 +3731,9 @@
         state.isSpeaking = false;
         currentAudio = null;
         notifySpeakerState(false);
+        if (!state.isRecording) {
+          unduckMusic();
+        }
         const orbEl = document.getElementById('orb-trigger');
         if (orbEl) {
           orbEl.classList.remove('speaking');
@@ -3157,6 +3750,7 @@
 
       isPlayingQueue = true;
       state.isSpeaking = true;
+      duckMusic();
       notifySpeakerState(true);
       const orbEl = document.getElementById('orb-trigger');
       if (orbEl) {
@@ -3190,6 +3784,7 @@
 
       try {
         state.isSpeaking = true;
+        duckMusic();
         notifySpeakerState(true);
         const orbEl = document.getElementById('orb-trigger');
         if (orbEl) {
@@ -3211,6 +3806,9 @@
           state.isSpeaking = false;
           currentAudio = null;
           notifySpeakerState(false);
+          if (!state.isRecording) {
+            unduckMusic();
+          }
           if (orbEl) {
             orbEl.classList.remove('speaking');
             orbEl.style.transform = 'scale(1)';
@@ -3225,6 +3823,9 @@
           state.isSpeaking = false;
           currentAudio = null;
           notifySpeakerState(false);
+          if (!state.isRecording) {
+            unduckMusic();
+          }
           if (orbEl) orbEl.classList.remove('speaking');
           if (tagEl) tagEl.textContent = 'Pronta para ouvir';
         };
@@ -3722,5 +4323,24 @@
       syncBackendStatus();
     });
   </script>
+
+  <!-- MINI PLAYER FLUTUANTE INFERIOR (MOBILE / GLOBAL) -->
+  <div class="mobile-music-dock" id="mobile-music-dock">
+    <div class="dock-track-info" onclick="scrollToMusicCard()">
+      <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect fill='%236D8E67' width='40' height='40'/></svg>" class="dock-thumb" id="dock-thumb" alt="Capa">
+      <div class="dock-meta">
+        <span class="dock-title" id="dock-title">Tocando música...</span>
+        <span class="dock-sub" id="dock-sub">YouTube</span>
+      </div>
+    </div>
+    <div class="dock-actions">
+      <button class="music-btn primary" style="padding: 6px 10px;" onclick="toggleMusicPlayPause()">
+        <span id="dock-play-icon">⏸</span>
+      </button>
+      <button class="music-btn" style="padding: 6px 10px;" onclick="stopMusicPlayer()">
+        <span>⏹</span>
+      </button>
+    </div>
+  </div>
 </body>
 </html>

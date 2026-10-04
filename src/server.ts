@@ -130,6 +130,13 @@ function broadcastToClients(data: string) {
   }
 }
 
+import { musicPlayerManager } from './core/media/music-player';
+
+// Sincronização em tempo real do Player de Música com clientes SSE
+musicPlayerManager.on('action', (evt) => {
+  broadcastToClients(JSON.stringify(evt));
+});
+
 import {
   hasEvaWakeWord,
   cleanEvaPrefix,
@@ -1103,6 +1110,15 @@ const server = http.createServer(async (req, res) => {
 
     res.write(`data: ${JSON.stringify({ type: 'init', connected: isEspWsConnected, ip: ESP32_IP })}\n\n`);
     res.write(`data: ${JSON.stringify({ type: 'bt_state', connected: lastBtConnected, deviceName: lastBtDeviceName })}\n\n`);
+    const currentMusicState = musicPlayerManager.getState();
+    if (currentMusicState.currentTrack) {
+      res.write(`data: ${JSON.stringify({
+        type: 'music_player_action',
+        action: currentMusicState.isPlaying ? (currentMusicState.isPaused ? 'pause' : 'play') : 'stop',
+        track: currentMusicState.currentTrack,
+        volume: currentMusicState.volume,
+      })}\n\n`);
+    }
     sseClients.add(res);
 
     res.on('error', () => {
@@ -1297,6 +1313,53 @@ const server = http.createServer(async (req, res) => {
     }));
     return;
   }
+
+  // =========================================================================
+  // API: Controle do Player de Música do YouTube (/api/music/...)
+  // =========================================================================
+  if (pathname === '/api/music/state' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, ...musicPlayerManager.getState() }));
+    return;
+  }
+
+  if (pathname === '/api/music/pause' && req.method === 'POST') {
+    musicPlayerManager.pause();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, state: musicPlayerManager.getState() }));
+    return;
+  }
+
+  if (pathname === '/api/music/resume' && req.method === 'POST') {
+    musicPlayerManager.resume();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, state: musicPlayerManager.getState() }));
+    return;
+  }
+
+  if (pathname === '/api/music/stop' && req.method === 'POST') {
+    musicPlayerManager.stop();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, state: musicPlayerManager.getState() }));
+    return;
+  }
+
+  if (pathname === '/api/music/volume' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      if (typeof body.volume === 'number') {
+        musicPlayerManager.setVolume(body.volume);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, state: musicPlayerManager.getState() }));
+    } catch (err: any) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
 
   // =========================================================================
   // API: Auto-Descoberta e Registro Dinâmico do ESP32 (/api/esp32/register)

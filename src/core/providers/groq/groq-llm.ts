@@ -73,26 +73,43 @@ export class GroqLLMProvider implements LLMProvider {
     });
 
     if (response.status === 429 || response.status === 503) {
-      const fallbackModel = (activeModel === 'qwen/qwen3.8-27b') ? 'openai/gpt-oss-20b' : 'qwen/qwen3.8-27b';
-      console.warn(`[GroqLLMProvider] Rate limit / indisponibilidade (${response.status}) no modelo '${activeModel}'. Alternando automaticamente para '${fallbackModel}'...`);
-      payload.model = fallbackModel;
+      let waitMs = 1000;
       try {
-        const retryRes = await fetch(`${this.baseUrl}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-          signal: options.signal,
-        });
-        if (retryRes && retryRes.ok) {
-          response = retryRes;
-          activeModel = fallbackModel;
-        } else if (retryRes) {
-          response = retryRes;
+        const errClone = response.clone();
+        const errJson: any = await errClone.json();
+        const msg = errJson?.error?.message || '';
+        const match = msg.match(/try again in ([\d\.]+)s/);
+        if (match) {
+          waitMs = Math.ceil(parseFloat(match[1]) * 1000) + 150;
         }
       } catch {}
+      waitMs = Math.min(Math.max(waitMs, 500), 4000);
+      console.warn(`[GroqLLMProvider] Rate limit (${response.status}) detectado. Aguardando ${waitMs}ms antes de retentar...`);
+      await new Promise((r) => setTimeout(r, waitMs));
+
+      const fallbackModel = (activeModel === 'qwen/qwen3.8-27b') ? 'openai/gpt-oss-20b' : 'qwen/qwen3.8-27b';
+      const candidateModels = [activeModel, fallbackModel];
+      for (const m of candidateModels) {
+        payload.model = m;
+        try {
+          const retryRes = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: options.signal,
+          });
+          if (retryRes && retryRes.ok) {
+            response = retryRes;
+            activeModel = m;
+            break;
+          } else if (retryRes) {
+            response = retryRes;
+          }
+        } catch {}
+      }
     }
 
     if (!response.ok) {

@@ -25,3 +25,8 @@ Thumbs.db
 *.bin
 *.elf
 *.hex
+build_tmp/
+conversation_history.jsonl
+scratch_*
+*.ps1
+

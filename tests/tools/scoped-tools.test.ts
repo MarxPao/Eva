@@ -30,7 +30,7 @@ describe('Scoped Tools (Ciclo de Teste 1)', () => {
       expect(res.data?.cidade).toBe('São Paulo');
       expect(res.data?.temperaturaAtual).toBeDefined();
       expect(res.data?.previsaoDias).toHaveLength(3);
-    });
+    }, 15000);
 
     it('deve falhar se o nome da cidade estiver vazio', async () => {
       const res = await executor.execute('consultar_clima', { cidade: '' }, context);

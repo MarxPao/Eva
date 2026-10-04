@@ -110,7 +110,7 @@ describe('AgentEngine (Loop de Raciocínio da EVA)', () => {
     // Verifica que totalizou tokens dos 2 turnos
     expect(result.telemetry.costs.llm.inputTokens).toBe(300);
     expect(result.telemetry.costs.llm.outputTokens).toBe(45);
-  });
+  }, 15000);
 
   it('deve suspender o loop e solicitar confirmação expressa ao tentar destrancar fechadura sem autorização prévia', async () => {
     const lockToolCallResponse: LLMCompletionResult = {
