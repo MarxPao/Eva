@@ -17,6 +17,7 @@
 #include <WebSocketsClient.h>
 #include "driver/i2s.h"
 #include <math.h>
+#include "esp_system.h"
 
 // Configurações de Rede
 const char* WIFI_SSID = "CMA";
@@ -47,6 +48,35 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
   #define LED_PIN      2   // LED Azul onboard padrão do ESP32 clássico
   #define LOG_PRINTLN(x) Serial.println(x)
   #define LOG_PRINTF(...) Serial.printf(__VA_ARGS__)
+
+// ============================================================================
+// Diagnóstico e Instrumentação de Memória / Reset (Etapa 0)
+// ============================================================================
+const char* getResetReasonString(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_POWERON:   return "POWERON (Liguei na tomada/USB)";
+    case ESP_RST_EXT:       return "EXT (Pino EN / Botão Reset)";
+    case ESP_RST_SW:        return "SW (Reboot por software)";
+    case ESP_RST_PANIC:     return "PANIC (Crash/Exception)";
+    case ESP_RST_INT_WDT:   return "INT_WDT (Watchdog de Interrupção)";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT (Task Watchdog travou)";
+    case ESP_RST_WDT:       return "WDT (Outro Watchdog)";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP (Acordou do sono profundo)";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT (Queda de tensão na fonte!)";
+    case ESP_RST_SDIO:      return "SDIO (Reset SDIO)";
+    default:                return "UNKNOWN / OUTRO";
+  }
+}
+
+void printMemoryReport(const char* tag) {
+  LOG_PRINTF("[MEM][%s] PSRAM: %s | FreeHeap: %u bytes (%.1f KB) | MaxAllocHeap: %u bytes (%.1f KB)\n",
+             tag,
+             psramFound() ? "sim" : "não",
+             (unsigned int)ESP.getFreeHeap(),
+             ESP.getFreeHeap() / 1024.0f,
+             (unsigned int)ESP.getMaxAllocHeap(),
+             ESP.getMaxAllocHeap() / 1024.0f);
+}
 
   // 1 = liga A2DP para a caixa de som com o ID 'BT-SPEAKER'; 0 = Bluetooth desligado
   #define BT_ENABLED 1
@@ -410,6 +440,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
       break;
     case WStype_CONNECTED: {
       LOG_PRINTLN("[WebSocket] ✅ CONECTADO COM SUCESSO AO BACKEND EVA!");
+      printMemoryReport("AFTER_WS_CONNECT");
       webSocket.sendTXT("{\"level\":0,\"rms\":0.0}");
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
       bool curConnected = a2dp_source.is_connected();
@@ -553,6 +584,10 @@ void setup() {
 #endif
   delay(1000);
 
+  esp_reset_reason_t rstReason = esp_reset_reason();
+  LOG_PRINTF("\n[RESET REASON] 🔍 Motivo do boot: %d (%s)\n", (int)rstReason, getResetReasonString(rstReason));
+  printMemoryReport("BOOT");
+
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
   esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
 #endif
@@ -616,6 +651,7 @@ void setup() {
   }
   if (webSocket.isConnected()) {
     LOG_PRINTLN("[WebSocket] ✅ Conexão WebSocket estabelecida no boot!");
+    printMemoryReport("AFTER_WS_CONNECT");
   } else {
     LOG_PRINTLN("[WebSocket] ⏳ Handshake em andamento; continuará no loop principal.");
   }
@@ -634,17 +670,26 @@ void setup() {
   a2dp_source.set_auto_reconnect(true, 3);
   a2dp_source.start(BT_SPEAKER_NAME, a2dp_data_callback);
   LOG_PRINTF("[BT-A2DP] 🎵 A2DP Source iniciado buscando '%s' (SSP ativo)...\n", BT_SPEAKER_NAME);
+  printMemoryReport("AFTER_A2DP_START");
 #else
   LOG_PRINTLN("[BT-A2DP] ⏸️ Bluetooth DESLIGADO (BT_ENABLED=0) para estabilizar Wi-Fi.");
+  printMemoryReport("AFTER_A2DP_SKIPPED");
 #endif
 #endif
 
   size_t freeHeap = esp_get_free_heap_size();
   LOG_PRINTF("[MEM] 🏁 Setup concluído! Heap livre pós-BT: %u bytes\n", freeHeap);
+  printMemoryReport("SETUP_DONE");
 }
 
 void loop() {
   webSocket.loop();
+
+  static unsigned long lastMemReport = 0;
+  if (millis() - lastMemReport >= 5000) {
+    lastMemReport = millis();
+    printMemoryReport("RUN_5S");
+  }
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
   static unsigned long lastBtCheck = 0;

@@ -738,6 +738,8 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
       trace.mark('t6');
     }
     console.log(trace.report());
+    const stageDurations = trace.getStageDurations();
+    console.log(`[PIPELINE TIMINGS] ⏱️ FimFala->Ingestão: ${stageDurations.uploadMs?.toFixed(1) ?? 'N/A'}ms | STT: ${stageDurations.sttMs?.toFixed(1) ?? 'N/A'}ms | 1ºToken LLM: ${stageDurations.ttftMs?.toFixed(1) ?? 'N/A'}ms | 1ªFrase: ${stageDurations.sentenceMs?.toFixed(1) ?? 'N/A'}ms | TTS: ${stageDurations.ttsMs?.toFixed(1) ?? 'N/A'}ms | Envio ESP32: ${stageDurations.dispatchMs?.toFixed(1) ?? 'N/A'}ms | Total (t6-t0): ${stageDurations.totalMs?.toFixed(1) ?? 'N/A'}ms`);
 
     return {
       userInputText,
