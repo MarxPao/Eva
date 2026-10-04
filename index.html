@@ -1793,6 +1793,149 @@
       gap: 6px;
       flex-shrink: 0;
     }
+
+    /* =========================================================================
+       MÓDULO DE TELEFONIA & CONTATOS
+       ========================================================================= */
+    .active-call-banner {
+      background: rgba(109, 142, 103, 0.16);
+      border: 1px solid var(--accent-sage);
+      border-radius: 16px;
+      padding: 12px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    .active-call-banner.visible {
+      display: flex;
+    }
+
+    .call-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .call-ringing-icon {
+      font-size: 22px;
+      animation: ringShake 0.6s infinite ease-in-out;
+    }
+
+    @keyframes ringShake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-15deg); }
+      40% { transform: rotate(15deg); }
+      60% { transform: rotate(-10deg); }
+      80% { transform: rotate(10deg); }
+    }
+
+    .call-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .call-target {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .call-phone {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .call-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .call-timer {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-sage);
+    }
+
+    .call-hangup-btn {
+      background: var(--accent-coral);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .call-hangup-btn:hover {
+      opacity: 0.88;
+      transform: scale(1.02);
+    }
+
+    .telephony-quick-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .telephony-quick-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .telephony-quick-item:hover {
+      background: var(--bg-pill-active);
+    }
+
+    .telephony-item-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .telephony-item-phone {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .telephony-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .telephony-action-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-primary);
+    }
+
+    .telephony-action-btn:hover {
+      background: var(--bg-pill);
+      border-color: var(--border-focus);
+    }
   </style>
 </head>
 <body>
@@ -1997,6 +2140,21 @@
             <span>Clique aqui para ativar o áudio da EVA no navegador</span>
           </div>
 
+          <!-- Banner de Chamada Telefônica Ativa -->
+          <div class="active-call-banner" id="active-call-banner">
+            <div class="call-banner-left">
+              <span class="call-ringing-icon">📞</span>
+              <div class="call-info">
+                <span class="call-target" id="call-target-name">Ligando...</span>
+                <span class="call-phone" id="call-target-phone">+55 (00) 00000-0000</span>
+              </div>
+            </div>
+            <div class="call-banner-right">
+              <span class="call-timer" id="call-timer">00:00</span>
+              <button class="call-hangup-btn" onclick="hangupCurrentCall()">Encerrar</button>
+            </div>
+          </div>
+
           <!-- Caixa de Transcrição e Resposta da EVA -->
           <div class="speech-transcript-box" id="speech-transcript-box">
             <div class="transcript-empty" id="transcript-placeholder">
@@ -2008,6 +2166,9 @@
           <!-- Chips de Ações Rápidas -->
           <div class="quick-chips-row">
             <button class="chip-btn" onclick="sendQuickMessage('Como está o clima para hoje?')">🌤️ Clima de hoje</button>
+            <button class="chip-btn" onclick="triggerCall('mãe')">📞 Ligar pra Mãe</button>
+            <button class="chip-btn" onclick="triggerWhatsApp('pai', 'Oi pai, tudo bem? Chego daqui a pouco!')">💬 WhatsApp Pai</button>
+            <button class="chip-btn" onclick="openContactsModal()">👥 Contatos</button>
             <button class="chip-btn" onclick="sendQuickMessage('Ligue a luz da sala')">💡 Ligar luz da sala</button>
             <button class="chip-btn" onclick="sendQuickMessage('Destrancar a fechadura')">🔓 Destrancar porta</button>
             <button class="chip-btn" onclick="sendQuickMessage('Que horas são?')">⏰ Que horas são?</button>
@@ -2083,6 +2244,25 @@
               <input type="range" class="music-vol-slider" id="music-vol-slider" min="0" max="100" value="80" oninput="changeMusicVolumeFromSlider(this.value)">
               <span class="music-vol-label" id="music-vol-label">80%</span>
             </div>
+          </div>
+        </div>
+
+        <!-- CARD: TELEFONIA & WHATSAPP -->
+        <div class="side-widget-card" id="telephony-widget-card">
+          <div class="panel-header-row">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">📞</span>
+              <h3 class="panel-title">Telefonia & WhatsApp</h3>
+            </div>
+            <span style="font-size:11px; font-weight:700; color:var(--accent-sage);" id="telephony-status-pill">VINCULAR CELULAR</span>
+          </div>
+
+          <div class="telephony-quick-list" id="telephony-quick-list">
+            <!-- Povoado dinamicamente com os contatos -->
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <button class="chip-btn" onclick="openContactsModal()" style="width:100%; text-align:center;">👥 Gerenciar Agenda de Contatos</button>
           </div>
         </div>
 
@@ -2425,6 +2605,49 @@
   </div>
 
   <!-- =========================================================================
+       MODAL DE AGENDA DE CONTATOS & TELEFONIA
+       ========================================================================= -->
+  <div class="modal-overlay" id="contacts-modal" onclick="closeContactsModal(event)">
+    <div class="modal-sheet" style="max-width: 640px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">👥</span>
+          <h4 class="modal-title">Agenda Telefônica da EVA</h4>
+        </div>
+        <button class="modal-close-btn" onclick="closeContactsModal()">✕</button>
+      </div>
+
+      <!-- Barra de Busca -->
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
+        <input type="text" id="contacts-search-input" class="chat-text-field" placeholder="Buscar por nome, apelido ou telefone..." oninput="handleContactSearch(this.value)" style="border-radius: 14px; padding: 10px 14px; width: 100%;">
+      </div>
+
+      <!-- Lista de Contatos -->
+      <div id="contacts-modal-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto; margin: 8px 0; padding-right: 4px;">
+        <!-- Injetado dinamicamente -->
+      </div>
+
+      <!-- Formulário de Adicionar Novo Contato -->
+      <div style="background: var(--bg-card); border-radius: 18px; padding: 16px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span>➕</span> <span>Adicionar Novo Contato à Agenda</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input type="text" id="new-contact-name" class="chat-text-field" placeholder="Nome (ex: Dra. Fernanda)" style="border-radius: 10px; padding: 8px 12px; font-size: 13px;">
+          <input type="text" id="new-contact-phone" class="chat-text-field" placeholder="Telefone com DDD (ex: 32999991234)" style="border-radius: 10px; padding: 8px 12px; font-size: 13px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input type="text" id="new-contact-aliases" class="chat-text-field" placeholder="Apelidos (ex: dentista, fê)" style="border-radius: 10px; padding: 8px 12px; font-size: 13px;">
+          <input type="text" id="new-contact-rel" class="chat-text-field" placeholder="Relação (ex: amiga, saúde)" style="border-radius: 10px; padding: 8px 12px; font-size: 13px;">
+        </div>
+        <button class="btn-top" onclick="handleAddNewContact()" style="background: var(--accent-sage); color: #fff; border: none; font-weight: 600; padding: 8px 16px; border-radius: 10px; cursor: pointer; align-self: flex-end;">
+          Salvar Contato
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        LOGICA JAVASCRIPT: SINCRONIZAÇÃO, VOZ, BLUETOOTH & ESTADO
        ========================================================================= -->
   <script>
@@ -2452,9 +2675,243 @@
         volume: 80,
         currentTrack: null
       },
+      telephony: {
+        activeCall: null,
+        contacts: []
+      },
       mediaRecorder: null,
       audioChunks: []
     };
+
+    // =========================================================================
+    // INTEGRAÇÃO TELEFONIA, CONTATOS & WHATSAPP
+    // =========================================================================
+    let callTimerInterval = null;
+    let callSeconds = 0;
+
+    function handleTelephonyEvent(evt) {
+      if (!evt) return;
+      if (evt.action === 'call_started') {
+        const banner = document.getElementById('active-call-banner');
+        const targetName = document.getElementById('call-target-name');
+        const targetPhone = document.getElementById('call-target-phone');
+        const timerEl = document.getElementById('call-timer');
+
+        if (targetName) targetName.textContent = evt.target?.name ? `Ligando para ${evt.target.name}...` : 'Ligando...';
+        if (targetPhone) targetPhone.textContent = evt.target?.formattedPhone || evt.target?.phone || '';
+        if (banner) banner.classList.add('visible');
+
+        callSeconds = 0;
+        if (timerEl) timerEl.textContent = '00:00';
+        if (callTimerInterval) clearInterval(callTimerInterval);
+        callTimerInterval = setInterval(() => {
+          callSeconds++;
+          const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+          const secs = String(callSeconds % 60).padStart(2, '0');
+          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        appendSerialLog('TEL', `📞 Chamada iniciada para ${evt.target?.name || ''} (${evt.target?.formattedPhone || evt.target?.phone || ''})`, 'sys');
+      } else if (evt.action === 'call_ended') {
+        const banner = document.getElementById('active-call-banner');
+        const targetName = document.getElementById('call-target-name');
+        if (targetName) targetName.textContent = 'Chamada finalizada';
+        if (callTimerInterval) {
+          clearInterval(callTimerInterval);
+          callTimerInterval = null;
+        }
+        setTimeout(() => {
+          if (banner) banner.classList.remove('visible');
+        }, 2500);
+
+        appendSerialLog('TEL', '📴 Chamada finalizada.', 'sys');
+      } else if (evt.action === 'whatsapp_opened') {
+        appendSerialLog('WPP', `💬 WhatsApp disparado para ${evt.target?.name || evt.target?.formattedPhone}: "${evt.details || ''}"`, 'sys');
+      }
+    }
+
+    async function triggerCall(target) {
+      try {
+        appendSerialLog('TEL', `Disparando chamada via celular para: "${target}"...`, 'sys');
+        const res = await fetch('/api/telephony/dial', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Erro ao discar: ' + data.error);
+        }
+      } catch (err) {
+        console.error('[triggerCall]', err);
+      }
+    }
+
+    async function triggerWhatsApp(target, message) {
+      try {
+        const msg = message || prompt(`Digite a mensagem a ser enviada no WhatsApp para ${target}:`);
+        if (!msg) return;
+        appendSerialLog('WPP', `Abrindo conversa do WhatsApp para ${target}...`, 'sys');
+        const res = await fetch('/api/telephony/whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target, message: msg })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Erro ao abrir WhatsApp: ' + data.error);
+        }
+      } catch (err) {
+        console.error('[triggerWhatsApp]', err);
+      }
+    }
+
+    async function hangupCurrentCall() {
+      try {
+        await fetch('/api/telephony/hangup', { method: 'POST' });
+        const banner = document.getElementById('active-call-banner');
+        if (banner) banner.classList.remove('visible');
+        if (callTimerInterval) {
+          clearInterval(callTimerInterval);
+          callTimerInterval = null;
+        }
+      } catch (err) {
+        console.error('[hangupCurrentCall]', err);
+      }
+    }
+
+    async function loadContacts() {
+      try {
+        const res = await fetch('/api/contacts');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.contacts)) {
+          state.telephony.contacts = data.contacts;
+          renderTelephonyQuickList();
+          renderContactsModalList();
+        }
+      } catch (err) {
+        console.warn('[loadContacts]', err);
+      }
+    }
+
+    function renderTelephonyQuickList() {
+      const container = document.getElementById('telephony-quick-list');
+      if (!container) return;
+      if (!state.telephony.contacts || state.telephony.contacts.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px;">Nenhum contato na agenda.</div>';
+        return;
+      }
+
+      container.innerHTML = state.telephony.contacts.slice(0, 4).map(c => `
+        <div class="telephony-quick-item">
+          <div>
+            <div class="telephony-item-name">${c.name} ${c.relationship ? `<span style="font-size:10px; font-weight:normal; opacity:0.8;">(${c.relationship})</span>` : ''}</div>
+            <div class="telephony-item-phone">${c.phone}</div>
+          </div>
+          <div class="telephony-item-actions">
+            <button class="telephony-action-btn" onclick="triggerCall('${c.name}')" title="Discar no Celular">📞</button>
+            <button class="telephony-action-btn" onclick="triggerWhatsApp('${c.name}')" title="Abrir WhatsApp">💬</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openContactsModal() {
+      const modal = document.getElementById('contacts-modal');
+      if (modal) modal.classList.add('open');
+      loadContacts();
+    }
+
+    function closeContactsModal(e) {
+      if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close-btn')) return;
+      const modal = document.getElementById('contacts-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function renderContactsModalList(filter = '') {
+      const container = document.getElementById('contacts-modal-list');
+      if (!container) return;
+
+      const normFilter = filter.toLowerCase().trim();
+      const filtered = state.telephony.contacts.filter(c => {
+        if (!normFilter) return true;
+        return c.name.toLowerCase().includes(normFilter) ||
+          c.phone.includes(normFilter) ||
+          (c.aliases && c.aliases.some(a => a.toLowerCase().includes(normFilter)));
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:16px;">Nenhum contato encontrado.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(c => `
+        <div class="telephony-quick-item" style="padding:10px 14px;">
+          <div>
+            <div class="telephony-item-name" style="font-size:14px;">
+              ${c.name} ${c.relationship ? `<span style="font-size:11px; font-weight:normal; color:var(--accent-sage);">• ${c.relationship}</span>` : ''}
+            </div>
+            <div class="telephony-item-phone">${c.phone} ${c.aliases && c.aliases.length ? `<span style="color:var(--text-muted);">· [${c.aliases.join(', ')}]</span>` : ''}</div>
+          </div>
+          <div class="telephony-item-actions">
+            <button class="telephony-action-btn" onclick="triggerCall('${c.name}')" title="Ligar">📞 Ligar</button>
+            <button class="telephony-action-btn" onclick="triggerWhatsApp('${c.name}')" title="WhatsApp">💬 Wpp</button>
+            <button class="telephony-action-btn" onclick="handleDeleteContact('${c.id}')" title="Excluir" style="color:var(--accent-coral);">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleContactSearch(val) {
+      renderContactsModalList(val);
+    }
+
+    async function handleAddNewContact() {
+      const name = document.getElementById('new-contact-name')?.value.trim();
+      const phone = document.getElementById('new-contact-phone')?.value.trim();
+      const aliasesRaw = document.getElementById('new-contact-aliases')?.value.trim();
+      const rel = document.getElementById('new-contact-rel')?.value.trim();
+
+      if (!name || !phone) {
+        alert('Nome e Telefone são obrigatórios!');
+        return;
+      }
+
+      const aliases = aliasesRaw ? aliasesRaw.split(',').map(a => a.trim()).filter(Boolean) : [];
+
+      try {
+        const res = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, aliases, relationship: rel })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (document.getElementById('new-contact-name')) document.getElementById('new-contact-name').value = '';
+          if (document.getElementById('new-contact-phone')) document.getElementById('new-contact-phone').value = '';
+          if (document.getElementById('new-contact-aliases')) document.getElementById('new-contact-aliases').value = '';
+          if (document.getElementById('new-contact-rel')) document.getElementById('new-contact-rel').value = '';
+          await loadContacts();
+        } else {
+          alert('Erro ao salvar contato.');
+        }
+      } catch (err) {
+        console.error('[handleAddNewContact]', err);
+      }
+    }
+
+    async function handleDeleteContact(id) {
+      if (!confirm('Deseja excluir este contato da agenda?')) return;
+      try {
+        const res = await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          await loadContacts();
+        }
+      } catch (err) {
+        console.error('[handleDeleteContact]', err);
+      }
+    }
 
     // Variáveis do Monitor Serial
     let isSerialAutoScroll = true;
@@ -3420,6 +3877,12 @@
             }
             return;
           }
+
+          // 8.5 Eventos de Telefonia e Chamadas (Phone Link / WhatsApp)
+          if (data.type === 'telephony_event') {
+            handleTelephonyEvent(data);
+            return;
+          }
         } catch (e) {
           console.warn('[SSE Parse Error]', e);
         }
@@ -4321,6 +4784,7 @@
       initThemeAndClock();
       setAudioOutput(audioOutputDestination);
       syncBackendStatus();
+      loadContacts();
     });
   </script>
 

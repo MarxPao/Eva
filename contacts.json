@@ -1,0 +1,35 @@
+[
+  {
+    "id": "c_mae",
+    "name": "Mãe",
+    "phone": "+5532999990001",
+    "aliases": [
+      "mãe",
+      "mae",
+      "mamãe",
+      "mamae"
+    ],
+    "relationship": "mãe"
+  },
+  {
+    "id": "c_pai",
+    "name": "Pai",
+    "phone": "+5532999990002",
+    "aliases": [
+      "pai",
+      "papai"
+    ],
+    "relationship": "pai"
+  },
+  {
+    "id": "c_rafael",
+    "name": "Rafael",
+    "phone": "+5532999990003",
+    "aliases": [
+      "rafa",
+      "eu",
+      "rafael"
+    ],
+    "relationship": "eu"
+  }
+]

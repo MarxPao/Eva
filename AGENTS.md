@@ -62,11 +62,23 @@ rtk git commit -m "<mensagem semântica>"
    * **Saída de Áudio:** Alto-falantes nativos do PC / navegador web (`index.html`) via chunks sintetizados Edge-TTS.
    * **Pinagem INMP441:** SD no GPIO 32, WS no GPIO 25 (espelhado no 15), SCK no GPIO 14, VDD em 3.3V, GND/L/R no GND.
 
+4. **Player de Música YouTube (`src/core/media/music-player.ts`):**
+   * Busca e reprodução direta no YouTube via `yt-search` e IFrame API.
+   * Suporte a ducking automático de áudio durante a fala da EVA.
+
+5. **Telefonia, Contatos e WhatsApp (`src/core/telephony/`):**
+   * **Gerenciador de Contatos:** `contacts-manager.ts` com persistência em `contacts.json`, normalização diacrítica e aliases afetivos ("mãe", "pai", "amor").
+   * **Discador Telefônico:** `phone-dialer.ts` com disparo nativo do SO (`tel:`) integrado ao *Vincular ao Celular* (Phone Link) do Windows para viva-voz pelo PC sem APIs pagas.
+   * **WhatsApp:** Links e envio direto via `wa.me` com mensagem codificada.
+   * **Ferramentas LLM:** `fazer_ligacao`, `enviar_mensagem_whatsapp`, `consultar_contatos`, `adicionar_contato`.
+   * **Frontend:** Banner com indicador animado de chamada ativa, timer de duração, botão de encerrar chamada, card de contatos rápidos e modal de gerenciamento.
+
 ---
 
 ## 📋 3. INSTRUÇÕES PARA NOVAS TAREFAS
 
 1. Antes de iniciar qualquer alteração, verifique a saúde da suíte com `rtk npm test`.
 2. Para compilar e subir firmware para o ESP32, use o script `rtk err arduino-cli ...`.
-3. Manter compatibilidade com testes unitários (21 arquivos / 80 testes).
+3. Manter compatibilidade com testes unitários (24 arquivos / 109 testes com 100% de aprovação).
 4. Próxima funcionalidade planejada: módulo introdutório / onboarding para cada usuário configurar sua localização e preferências.
+

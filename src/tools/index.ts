@@ -12,6 +12,12 @@ import {
   pararMusicaTool,
   ajustarVolumeMusicaTool,
 } from './low-risk/player-musica';
+import {
+  fazerLigacaoTool,
+  enviarMensagemWhatsappTool,
+  consultarContatosTool,
+  adicionarContatoTool,
+} from './low-risk/telefonia';
 import { destrancarFechaduraTool } from './sensitive/destrancar-fechadura';
 import { ligarDispositivoTool, desligarDispositivoTool } from './sensitive/dispositivos';
 
@@ -27,6 +33,10 @@ export const ALL_TOOLS = [
   retomarMusicaTool,
   pararMusicaTool,
   ajustarVolumeMusicaTool,
+  fazerLigacaoTool,
+  enviarMensagemWhatsappTool,
+  consultarContatosTool,
+  adicionarContatoTool,
   destrancarFechaduraTool,
   ligarDispositivoTool,
   desligarDispositivoTool,
@@ -50,6 +60,10 @@ export {
   retomarMusicaTool,
   pararMusicaTool,
   ajustarVolumeMusicaTool,
+  fazerLigacaoTool,
+  enviarMensagemWhatsappTool,
+  consultarContatosTool,
+  adicionarContatoTool,
   destrancarFechaduraTool,
   ligarDispositivoTool,
   desligarDispositivoTool,

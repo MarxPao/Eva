@@ -131,9 +131,16 @@ function broadcastToClients(data: string) {
 }
 
 import { musicPlayerManager } from './core/media/music-player';
+import { contactsManager } from './core/telephony/contacts-manager';
+import { phoneDialer } from './core/telephony/phone-dialer';
 
 // Sincronização em tempo real do Player de Música com clientes SSE
 musicPlayerManager.on('action', (evt) => {
+  broadcastToClients(JSON.stringify(evt));
+});
+
+// Sincronização em tempo real de eventos de Telefonia e Chamadas com clientes SSE
+phoneDialer.on('call', (evt) => {
   broadcastToClients(JSON.stringify(evt));
 });
 
@@ -1359,6 +1366,83 @@ const server = http.createServer(async (req, res) => {
     }
     return;
   }
+
+  // =========================================================================
+  // API: Telefonia & Contatos (/api/contacts e /api/telephony)
+  // =========================================================================
+  if (pathname === '/api/contacts' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, contacts: contactsManager.getContacts() }));
+    return;
+  }
+
+  if (pathname === '/api/contacts' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      if (!body.name || !body.phone) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Nome e telefone são obrigatórios' }));
+        return;
+      }
+      const newContact = contactsManager.addContact(body);
+      res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, contact: newContact }));
+    } catch (err: any) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname.startsWith('/api/contacts/') && req.method === 'DELETE') {
+    const contactId = pathname.replace('/api/contacts/', '').trim();
+    const removed = contactsManager.deleteContact(contactId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: removed }));
+    return;
+  }
+
+  if (pathname === '/api/telephony/dial' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      const dialRes = await phoneDialer.dial(body.target || '');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(dialRes));
+    } catch (err: any) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname === '/api/telephony/whatsapp' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      const waRes = await phoneDialer.openWhatsApp(body.target || '', body.message || '');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(waRes));
+    } catch (err: any) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname === '/api/telephony/hangup' && req.method === 'POST') {
+    try {
+      const endRes = phoneDialer.endCall();
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(endRes));
+    } catch (err: any) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
 
 
   // =========================================================================
