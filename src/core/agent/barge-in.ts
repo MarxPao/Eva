@@ -17,8 +17,8 @@ export interface ActiveInteractionState {
  */
 export function hasEvaWakeWord(text: string): boolean {
   if (!text || typeof text !== 'string') return false;
-  // Match 'eva', 'éva', 'êva', 'eiva', 'eba', 'evar', 'ever' como palavra isolada
-  return /(?:^|[^\p{L}\p{N}])(?:eva|éva|êva|eiva|eba|evar|ever)(?:$|[^\p{L}\p{N}])/iu.test(text);
+  // Match estrito: 'eva', 'éva', 'êva', 'eiva' como palavra isolada
+  return /(?:^|[^\p{L}\p{N}])(?:eva|éva|êva|eiva)(?:$|[^\p{L}\p{N}])/iu.test(text);
 }
 
 /**
@@ -26,7 +26,7 @@ export function hasEvaWakeWord(text: string): boolean {
  */
 export function cleanEvaPrefix(text: string): string {
   if (!text || typeof text !== 'string') return '';
-  return text.replace(/^(?:eva|éva|êva|eiva|eba|evar|ever)\s*[:,\-!.]?\s*/iu, '').trim();
+  return text.replace(/^(?:eva|éva|êva|eiva)\s*[:,\-!.]?\s*/iu, '').trim();
 }
 
 /**

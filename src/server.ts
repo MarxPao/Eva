@@ -387,7 +387,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     const sttResult = await voicePipeline['sttOrchestrator'].execute(
       (stt) => stt.transcribe(audioBuffer, {
         language: 'pt',
-        prompt: 'EVA, assistente virtual inteligente em português. Fala com a Eva.',
+        prompt: 'Transcrição de áudio em português.',
       }),
       'Pipeline_Voice_STT'
     );

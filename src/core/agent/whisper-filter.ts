@@ -53,6 +53,8 @@ export function isWhisperNoise(rawText: string): boolean {
     /canal\s+do\s+youtube/i,
     /todos\s+os\s+direitos\s+reservados/i,
     /áudio\s+(?:em\s+)?portugu[êe]s/i,
+    /fala\s+com\s+a\s+eva/i,
+    /assistente\s+virtual\s+inteligente/i,
   ];
 
   for (const pattern of hallucinationPatterns) {
