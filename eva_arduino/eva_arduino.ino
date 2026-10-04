@@ -18,13 +18,20 @@
 #include "driver/i2s.h"
 #include <math.h>
 #include "esp_system.h"
+#include <Preferences.h>
+#include <ESPmDNS.h>
+#include <WebServer.h>
+#include <DNSServer.h>
 
-// Configurações de Rede
-const char* WIFI_SSID = "CMA";
-const char* WIFI_PASS = "clsma1976";
-const char* SERVER_HOST = "192.168.2.146";
-const uint16_t SERVER_PORT = 8080;
-const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
+// Configurações Dinâmicas de Rede e Servidor (NVS / mDNS)
+Preferences preferences;
+String wifiSsid = "CMA";
+String wifiPass = "clsma1976";
+String serverHost = "192.168.2.146";
+uint16_t serverPort = 8080;
+String serverVoiceUrl = "http://192.168.2.146:8080/api/pipeline/voice";
+String savedBtMacStr = "";
+void saveBtMacToNvs(const char* macStr);
 
 // ============================================================================
 // Configuração de Pinos: Compatibilidade ESP32 Clássico vs ESP32-S3
@@ -266,6 +273,9 @@ void printMemoryReport(const char* tag) {
       LOG_PRINTLN("\n=======================================================");
       LOG_PRINTLN("[BT-A2DP] ✅ CONECTADO COM SUCESSO À CAIXA DE SOM BLUETOOTH!");
       LOG_PRINTLN("=======================================================\n");
+      if (strlen(lastScanMac) == 17) {
+        saveBtMacToNvs(lastScanMac);
+      }
     } else if (state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
       isBtSpeakerConnected = false;
       btStateChanged = true;
@@ -400,7 +410,7 @@ void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
              totalWavBytes, (float)recordedSamples / 16000.0f);
 
   HTTPClient http;
-  http.begin(SERVER_VOICE_URL);
+  http.begin(serverVoiceUrl.c_str());
   http.addHeader("Content-Type", "audio/wav");
   if (t0_cutoff > 0) {
     http.addHeader("X-VAD-Cutoff-Elapsed-Ms", String(millis() - t0_cutoff));
@@ -561,6 +571,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
           if (sscanf(macStr.c_str(), "%x:%x:%x:%x:%x:%x", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]) == 6) {
             for (int i = 0; i < 6; i++) targetBtMac[i] = (uint8_t)b[i];
             hasTargetMac = true;
+            saveBtMacToNvs(macStr.c_str());
             LOG_PRINTF("[BT-A2DP] 🔄 Conectando diretamente ao MAC alvo: %s\n", macStr.c_str());
             a2dp_source.connect_to(targetBtMac);
           }
@@ -662,6 +673,163 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
   }
 }
 
+// ============================================================================
+// Conectividade, NVS, mDNS e Portal Cativo (Etapa 6 - ACH-06, ACH-07)
+// ============================================================================
+void updateServerUrls() {
+  serverVoiceUrl = "http://" + serverHost + ":" + String(serverPort) + "/api/pipeline/voice";
+}
+
+void saveBtMacToNvs(const char* macStr) {
+  if (macStr && strlen(macStr) == 17) {
+    preferences.begin("eva_cfg", false);
+    preferences.putString("bt_mac", String(macStr));
+    preferences.end();
+    LOG_PRINTF("[NVS] 💾 MAC Bluetooth '%s' persistido na NVS para reconexão automática!\n", macStr);
+  }
+}
+
+void initPreferences() {
+  preferences.begin("eva_cfg", false);
+  if (!preferences.isKey("ssid")) {
+    preferences.putString("ssid", "CMA");
+    preferences.putString("pass", "clsma1976");
+    preferences.putString("server_ip", "192.168.2.146");
+    preferences.putUInt("server_port", 8080);
+    preferences.putString("bt_mac", "");
+    LOG_PRINTLN("[NVS] 💾 Valores padrão salvos na memória não-volátil.");
+  }
+  wifiSsid = preferences.getString("ssid", "CMA");
+  wifiPass = preferences.getString("pass", "clsma1976");
+  serverHost = preferences.getString("server_ip", "192.168.2.146");
+  serverPort = preferences.getUInt("server_port", 8080);
+  savedBtMacStr = preferences.getString("bt_mac", "");
+  preferences.end();
+
+  updateServerUrls();
+
+  LOG_PRINTF("[NVS] 📂 Configurações carregadas: SSID='%s' | Server='%s:%u'\n",
+             wifiSsid.c_str(), serverHost.c_str(), serverPort);
+
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  if (savedBtMacStr.length() == 17) {
+    unsigned int b[6];
+    if (sscanf(savedBtMacStr.c_str(), "%x:%x:%x:%x:%x:%x", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5]) == 6) {
+      for (int i = 0; i < 6; i++) targetBtMac[i] = (uint8_t)b[i];
+      hasTargetMac = true;
+      LOG_PRINTF("[NVS] 🎯 MAC da caixinha Bluetooth restaurado da NVS: %s\n", savedBtMacStr.c_str());
+    }
+  }
+#endif
+}
+
+void runCaptivePortal() {
+  LOG_PRINTLN("\n=======================================================");
+  LOG_PRINTLN("[PORTAL] 🌐 INICIANDO MODO PORTAL CATIVO (SoftAP)");
+  LOG_PRINTLN("[PORTAL] SSID: EVA-Assistant-Setup | IP: 192.168.4.1");
+  LOG_PRINTLN("=======================================================\n");
+
+  WiFi.disconnect(true);
+  delay(100);
+  WiFi.mode(WIFI_AP);
+  IPAddress apIp(192, 168, 4, 1);
+  WiFi.softAPConfig(apIp, apIp, IPAddress(255, 255, 255, 0));
+  WiFi.softAP("EVA-Assistant-Setup");
+
+  DNSServer dnsServer;
+  dnsServer.start(53, "*", apIp);
+
+  WebServer webServer(80);
+
+  int n = WiFi.scanNetworks();
+  String optionsHtml = "";
+  for (int i = 0; i < n; ++i) {
+    optionsHtml += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" + String(WiFi.RSSI(i)) + " dBm)</option>";
+  }
+
+  webServer.on("/", HTTP_GET, [&webServer, &optionsHtml]() {
+    String html = "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+      "<title>EVA Setup</title><style>"
+      "body{font-family:sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;text-align:center;}"
+      ".card{background:#161b22;max-width:400px;margin:0 auto;padding:24px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}"
+      "h2{color:#58a6ff;margin-top:0;}label{display:block;text-align:left;margin:12px 0 4px;font-size:13px;color:#8b949e;}"
+      "input,select{width:100%;box-sizing:border-box;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff;margin-bottom:8px;}"
+      "button{width:100%;padding:12px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:12px;}"
+      "</style></head><body><div class='card'>"
+      "<h2>Configurar EVA</h2>"
+      "<form method='POST' action='/save'>"
+      "<label>Rede Wi-Fi:</label><select name='ssid' id='ssid_sel' onchange='if(this.value)document.getElementById(\"ssid_inp\").value=this.value'>"
+      "<option value=''>-- Selecione uma rede --</option>" + optionsHtml + "</select>"
+      "<input type='text' id='ssid_inp' name='ssid_custom' placeholder='Ou digite o SSID'>"
+      "<label>Senha Wi-Fi:</label><input type='password' name='pass' placeholder='Senha'>"
+      "<label>IP ou Host do Servidor:</label><input type='text' name='host' value='192.168.2.146' placeholder='Ex: 192.168.2.146 ou eva.local'>"
+      "<button type='submit'>Salvar e Reiniciar</button>"
+      "</form></div></body></html>";
+    webServer.send(200, "text/html", html);
+  });
+
+  webServer.on("/save", HTTP_POST, [&webServer]() {
+    String s = webServer.arg("ssid_custom");
+    if (s.length() == 0) s = webServer.arg("ssid");
+    String p = webServer.arg("pass");
+    String h = webServer.arg("host");
+
+    if (s.length() > 0) {
+      preferences.begin("eva_cfg", false);
+      preferences.putString("ssid", s);
+      preferences.putString("pass", p);
+      if (h.length() > 0) preferences.putString("server_ip", h);
+      preferences.end();
+
+      String resp = "<html><body style='font-family:sans-serif;background:#0d1117;color:#58a6ff;text-align:center;padding:50px;'>"
+                    "<h2>✅ Configurações salvas!</h2><p>Reiniciando o assistente EVA...</p></body></html>";
+      webServer.send(200, "text/html", resp);
+      delay(2000);
+      ESP.restart();
+    } else {
+      webServer.send(400, "text/plain", "SSID invalido");
+    }
+  });
+
+  webServer.onNotFound([&webServer, apIp]() {
+    webServer.sendHeader("Location", "http://" + apIp.toString() + "/", true);
+    webServer.send(302, "text/plain", "");
+  });
+
+  webServer.begin();
+
+  unsigned long lastBlink = 0;
+  bool ledState = false;
+  while (true) {
+    dnsServer.processNextRequest();
+    webServer.handleClient();
+    if (millis() - lastBlink > 300) {
+      lastBlink = millis();
+      ledState = !ledState;
+      digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+    }
+    delay(5);
+  }
+}
+
+void resolveMdnsServer() {
+  LOG_PRINTLN("[mDNS] 🔍 Buscando servidor 'eva.local' na rede via mDNS...");
+  if (!MDNS.begin("eva-esp32")) {
+    LOG_PRINTLN("[mDNS] ⚠️ Falha ao inicializar respondedor mDNS.");
+  } else {
+    LOG_PRINTLN("[mDNS] ✅ Respondedor mDNS iniciado como 'eva-esp32.local'.");
+  }
+
+  IPAddress resolvedIp = MDNS.queryHost("eva", 2500);
+  if (resolvedIp != INADDR_NONE && resolvedIp[0] != 0) {
+    serverHost = resolvedIp.toString();
+    updateServerUrls();
+    LOG_PRINTF("[mDNS] 🎯 Servidor 'eva.local' localizado com sucesso! IP: %s\n", serverHost.c_str());
+  } else {
+    LOG_PRINTF("[mDNS] ⚠️ Servidor 'eva.local' não respondeu na busca. Usando fallback configurado: %s\n", serverHost.c_str());
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -685,48 +853,53 @@ void setup() {
 #endif
   LOG_PRINTLN("==================================");
 
+  initPreferences();
+
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
   i2sMicInit();
 
-  LOG_PRINTF("[WiFi] Conectando a: %s\n", WIFI_SSID);
+  LOG_PRINTF("[WiFi] Conectando a: %s\n", wifiSsid.c_str());
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.begin(wifiSsid.c_str(), wifiPass.c_str());
 
   int retries = 0;
-  while (WiFi.status() != WL_CONNECTED && retries < 50) {
+  while (WiFi.status() != WL_CONNECTED && retries < 35) {
     delay(300);
     LOG_PRINTLN(".");
     retries++;
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
-    LOG_PRINTLN("\n[WiFi] Conectado!");
-    LOG_PRINTF("[WiFi] IP do ESP32: %s\n", WiFi.localIP().toString().c_str());
-    LOG_PRINTF("[EVA] Backend: %s\n", SERVER_VOICE_URL);
-
-    // Auto-registro dinâmico de IP no servidor EVA
-    HTTPClient regHttp;
-    String regUrl = "http://192.168.2.146:8080/api/esp32/register?ip=" + WiFi.localIP().toString();
-    regHttp.begin(regUrl);
-    regHttp.setTimeout(2500);
-    int regCode = regHttp.GET();
-    if (regCode == 200) {
-      LOG_PRINTLN("[EVA] ✅ Registrado com sucesso no servidor!");
-    }
-    regHttp.end();
-  } else {
-    LOG_PRINTLN("\n[WiFi] Falha ao conectar. Operando modo offline.");
+  if (WiFi.status() != WL_CONNECTED) {
+    LOG_PRINTLN("\n[WiFi] ⚠️ Falha ao conectar no Wi-Fi configurado. Iniciando Portal Cativo...");
+    runCaptivePortal();
   }
 
-  webSocket.begin(SERVER_HOST, SERVER_PORT, "/api/esp32/ws", "");
+  LOG_PRINTLN("\n[WiFi] Conectado!");
+  LOG_PRINTF("[WiFi] IP do ESP32: %s\n", WiFi.localIP().toString().c_str());
+
+  resolveMdnsServer();
+  LOG_PRINTF("[EVA] Backend: %s\n", serverVoiceUrl.c_str());
+
+  // Auto-registro dinâmico de IP no servidor EVA
+  HTTPClient regHttp;
+  String regUrl = "http://" + serverHost + ":" + String(serverPort) + "/api/esp32/register?ip=" + WiFi.localIP().toString();
+  regHttp.begin(regUrl);
+  regHttp.setTimeout(2500);
+  int regCode = regHttp.GET();
+  if (regCode == 200) {
+    LOG_PRINTLN("[EVA] ✅ Registrado com sucesso no servidor!");
+  }
+  regHttp.end();
+
+  webSocket.begin(serverHost.c_str(), serverPort, "/api/esp32/ws", "");
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(1500);
-  LOG_PRINTF("[WebSocket] Cliente configurado para ws://%s:%u/api/esp32/ws\n", SERVER_HOST, SERVER_PORT);
+  LOG_PRINTF("[WebSocket] Cliente configurado para ws://%s:%u/api/esp32/ws\n", serverHost.c_str(), serverPort);
 
   // Estabelece a conexão WebSocket inicial com heap livre abundante (>150KB) antes do Bluedroid
   unsigned long wsStart = millis();
@@ -1124,7 +1297,7 @@ void loop() {
     if (!wasConnected) {
       wasConnected = true;
       LOG_PRINTF("[WiFi] ✅ Conexão restabelecida! IP: %s\n", WiFi.localIP().toString().c_str());
-      webSocket.begin(SERVER_HOST, SERVER_PORT, "/api/esp32/ws", "");
+      webSocket.begin(serverHost.c_str(), serverPort, "/api/esp32/ws", "");
     }
   }
 }

@@ -2653,12 +2653,88 @@
     // =========================================================================
     // CONEXÃO COM O BACKEND VIA SERVER-SENT EVENTS (SSE) & ESP32 BRIDGE
     // =========================================================================
+    // Conectividade SSE, WakeLock & Heartbeat com Reconnect Exponencial + Jitter
+    // =========================================================================
     let evtSource = null;
+    let sseReconnectAttempts = 0;
+    let sseReconnectTimer = null;
+    let lastHeartbeatReceived = Date.now();
+    let screenWakeLock = null;
+
+    async function acquireWakeLock() {
+      try {
+        if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+          screenWakeLock = await navigator.wakeLock.request('screen');
+          console.log('[WakeLock] 💡 Tela protegida contra bloqueio.');
+          screenWakeLock.addEventListener('release', () => {
+            console.log('[WakeLock] 💤 Wake lock liberado.');
+            screenWakeLock = null;
+          });
+        }
+      } catch (err) {
+        console.warn('[WakeLock] Aviso ao solicitar wake lock:', err);
+      }
+    }
+
+    // Monitora visibilidade da tela (quando o celular é desbloqueado)
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        acquireWakeLock();
+        const isStale = (Date.now() - lastHeartbeatReceived) > 30000;
+        if (!evtSource || evtSource.readyState === EventSource.CLOSED || isStale) {
+          console.log('[SSE] 🔄 Tela desbloqueada ou conexão inativa. Reconectando imediatamente...');
+          reconnectSseImmediately();
+        }
+      }
+    });
+
+    window.addEventListener('load', () => {
+      acquireWakeLock();
+    });
+    document.addEventListener('click', () => {
+      if (!screenWakeLock) acquireWakeLock();
+    }, { once: true });
+
+    function scheduleSseReconnect() {
+      if (sseReconnectTimer) return;
+      sseReconnectAttempts++;
+      // Backoff exponencial: 1s, 1.5s, 2.25s, 3.37s... até max 12s + jitter aleatório de 100-500ms
+      const baseDelay = 1000;
+      const maxDelay = 12000;
+      const factor = Math.min(maxDelay, baseDelay * Math.pow(1.5, Math.min(sseReconnectAttempts, 6)));
+      const jitter = Math.random() * 500;
+      const totalDelay = Math.round(factor + jitter);
+
+      appendSerialLog('SYS', `⚠️ Conexão perdida. Reconectando em ${totalDelay}ms (tentativa #${sseReconnectAttempts})...`, 'sys');
+      sseReconnectTimer = setTimeout(() => {
+        sseReconnectTimer = null;
+        connectSerialStream();
+      }, totalDelay);
+    }
+
+    function reconnectSseImmediately() {
+      if (sseReconnectTimer) {
+        clearTimeout(sseReconnectTimer);
+        sseReconnectTimer = null;
+      }
+      sseReconnectAttempts = 0;
+      connectSerialStream();
+    }
 
     function reconnectESP32() {
       appendSerialLog('SYS', 'Reconectando monitor ao backend...', 'sys');
-      connectSerialStream();
+      reconnectSseImmediately();
     }
+
+    // Intervalo de verificação de liveness do SSE a cada 10s
+    setInterval(() => {
+      if (evtSource && evtSource.readyState === EventSource.OPEN) {
+        if (Date.now() - lastHeartbeatReceived > 40000) {
+          console.warn('[SSE Heartbeat] ⚠️ Conexão inativa por mais de 40s. Forçando reconexão...');
+          reconnectSseImmediately();
+        }
+      }
+    }, 10000);
 
     function connectSerialStream() {
       if (evtSource) {
@@ -2668,6 +2744,8 @@
       evtSource = new EventSource('/api/serial/stream');
 
       evtSource.onopen = () => {
+        sseReconnectAttempts = 0;
+        lastHeartbeatReceived = Date.now();
         appendSerialLog('SYS', 'Canal SSE (/api/serial/stream) conectado com sucesso.', 'sys');
       };
 
@@ -2675,6 +2753,12 @@
         try {
           if (!event.data) return;
           const data = JSON.parse(event.data);
+          lastHeartbeatReceived = Date.now();
+
+          // Heartbeat periódico para keep-alive
+          if (data.type === 'heartbeat') {
+            return;
+          }
 
           // 1. Pacote de telemetria de áudio bruto do ESP32 (RMS, Level, st)
           if (data.rms !== undefined || data.level !== undefined) {
@@ -2762,7 +2846,9 @@
       };
 
       evtSource.onerror = () => {
-        // SSE reconecta automaticamente no navegador
+        try { evtSource.close(); } catch(e) {}
+        evtSource = null;
+        scheduleSseReconnect();
       };
     }
 

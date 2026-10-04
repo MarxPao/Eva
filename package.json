@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "bonjour-service": "^1.4.4",
     "dotenv": "^18.0.4",
     "mpg123-decoder": "^1.0.3",
     "msedge-tts": "^2.0.8",

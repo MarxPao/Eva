@@ -1658,4 +1658,31 @@ server.listen(PORT, '0.0.0.0', () => {
   }).catch((err) => {
     console.warn('[Task 4 Pre-Warm] Aviso ao pré-aquecer:', err);
   });
+
+  // Publica serviço mDNS na rede local para descoberta automática (eva.local)
+  import('bonjour-service').then(({ Bonjour }) => {
+    try {
+      const bonjour = new Bonjour();
+      bonjour.publish({
+        name: 'eva',
+        host: 'eva.local',
+        type: 'http',
+        port: PORT,
+        txt: { service: 'eva-voice-assistant', version: '0.1.0' },
+      });
+      console.log(`[mDNS] 📡 Anúncio ativo na rede local: http://eva.local:${PORT}`);
+    } catch (e) {
+      console.warn('[mDNS] Aviso: não foi possível publicar via Bonjour:', e);
+    }
+  }).catch(() => {});
+
+  // Heartbeat periódico (15s) para conexões SSE da interface web (SPA)
+  setInterval(() => {
+    if (sseClients.size > 0) {
+      const hbPayload = `data: ${JSON.stringify({ type: 'heartbeat', timestamp: Date.now() })}\n\n`;
+      for (const client of sseClients) {
+        try { client.write(hbPayload); } catch { sseClients.delete(client); }
+      }
+    }
+  }, 15000);
 });
