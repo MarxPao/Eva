@@ -73,12 +73,18 @@ rtk git commit -m "<mensagem semântica>"
    * **Ferramentas LLM:** `fazer_ligacao`, `enviar_mensagem_whatsapp`, `consultar_contatos`, `adicionar_contato`.
    * **Frontend:** Banner com indicador animado de chamada ativa, timer de duração, botão de encerrar chamada, card de contatos rápidos e modal de gerenciamento.
 
+6. **Agenda, Compromissos e Lembretes (`src/core/calendar/`):**
+   * **Gerenciador de Calendário:** `calendar-manager.ts` com persistência em `calendar.json`, parsing resiliente de datas e horários em português (*"hoje"*, *"amanhã"*, *"quarta-feira"*, *"14:30"*) e monitor de lembretes em background (`reminder_due`).
+   * **Ferramentas LLM:** `consultar_agenda`, `agendar_compromisso`, `remover_compromisso`, `criar_lembrete`.
+   * **Endpoints REST & SSE:** Rotas `/api/calendar/events` e `/api/calendar/reminders` com broadcast SSE em tempo real.
+   * **Frontend:** Banner sonoro de alarme com sino pulsante e chime Web Audio API, card de compromissos com abas de filtro (*Hoje*, *Amanhã*, *Todos*), lista de lembretes e modal de agendamento rápido.
+
 ---
 
 ## 📋 3. INSTRUÇÕES PARA NOVAS TAREFAS
 
 1. Antes de iniciar qualquer alteração, verifique a saúde da suíte com `rtk npm test`.
 2. Para compilar e subir firmware para o ESP32, use o script `rtk err arduino-cli ...`.
-3. Manter compatibilidade com testes unitários (24 arquivos / 109 testes com 100% de aprovação).
+3. Manter compatibilidade com testes unitários (25 arquivos / 119 testes com 100% de aprovação).
 4. Próxima funcionalidade planejada: módulo introdutório / onboarding para cada usuário configurar sua localização e preferências.
 

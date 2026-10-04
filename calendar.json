@@ -1,0 +1,46 @@
+{
+  "eventos": [
+    {
+      "id": "evt_padrao_1",
+      "titulo": "Alinhamento de Arquitetura da EVA",
+      "data": "2026-10-04",
+      "horaInicio": "09:30",
+      "horaFim": "10:30",
+      "local": "Google Meet",
+      "descricao": "Revisão das métricas de latência e pipeline VAD/I2S",
+      "categoria": "reuniao",
+      "criadoEm": "2026-10-04T12:00:00.000Z"
+    },
+    {
+      "id": "evt_padrao_2",
+      "titulo": "Revisão de Firmware ESP32",
+      "data": "2026-10-04",
+      "horaInicio": "14:00",
+      "horaFim": "15:30",
+      "local": "Bancada de Hardware",
+      "descricao": "Validação de streaming PCM e heap de 195KB",
+      "categoria": "trabalho",
+      "criadoEm": "2026-10-04T12:00:00.000Z"
+    }
+  ],
+  "lembretes": [
+    {
+      "id": "rem_padrao_1",
+      "texto": "Verificar status da bateria do microfone",
+      "quando": "às 18:00",
+      "dataAlvo": "2026-10-04",
+      "horaAlvo": "18:00",
+      "status": "agendado",
+      "criadoEm": "2026-10-04T12:00:00.000Z"
+    },
+    {
+      "id": "rem_1791143564437_1dt0",
+      "texto": "Comprar pilhas para o controle",
+      "quando": "às 18:00",
+      "dataAlvo": "2026-10-04",
+      "horaAlvo": "18:00",
+      "status": "agendado",
+      "criadoEm": "2026-10-04T19:52:44.438Z"
+    }
+  ]
+}

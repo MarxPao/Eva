@@ -133,6 +133,7 @@ function broadcastToClients(data: string) {
 import { musicPlayerManager } from './core/media/music-player';
 import { contactsManager } from './core/telephony/contacts-manager';
 import { phoneDialer } from './core/telephony/phone-dialer';
+import { calendarManager } from './core/calendar/calendar-manager';
 
 // Sincronização em tempo real do Player de Música com clientes SSE
 musicPlayerManager.on('action', (evt) => {
@@ -141,6 +142,15 @@ musicPlayerManager.on('action', (evt) => {
 
 // Sincronização em tempo real de eventos de Telefonia e Chamadas com clientes SSE
 phoneDialer.on('call', (evt) => {
+  broadcastToClients(JSON.stringify(evt));
+});
+
+// Sincronização em tempo real de eventos da Agenda & Calendário com clientes SSE
+calendarManager.on('calendar', (evt) => {
+  broadcastToClients(JSON.stringify(evt));
+});
+
+calendarManager.on('reminder_due', (evt) => {
   broadcastToClients(JSON.stringify(evt));
 });
 
@@ -1440,6 +1450,86 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
+    return;
+  }
+
+  // =========================================================================
+  // API: Agenda de Compromissos & Lembretes (/api/calendar)
+  // =========================================================================
+  if (pathname === '/api/calendar/events' && req.method === 'GET') {
+    const dateParam = urlObj.searchParams.get('date') || '';
+    const events = calendarManager.getEventos(dateParam);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, events }));
+    return;
+  }
+
+  if (pathname === '/api/calendar/events' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      if (!body.titulo || !body.data) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Título e data são obrigatórios' }));
+        return;
+      }
+      const newEvent = calendarManager.addEvento(body);
+      res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, event: newEvent }));
+    } catch (err: any) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname.startsWith('/api/calendar/events/') && req.method === 'DELETE') {
+    const eventId = pathname.replace('/api/calendar/events/', '').trim();
+    const removed = calendarManager.removerEvento(eventId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: removed }));
+    return;
+  }
+
+  if (pathname === '/api/calendar/reminders' && req.method === 'GET') {
+    const reminders = calendarManager.getLembretes();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, reminders }));
+    return;
+  }
+
+  if (pathname === '/api/calendar/reminders' && req.method === 'POST') {
+    try {
+      const rawBody = await parseBody(req);
+      const body = JSON.parse(rawBody.toString('utf8') || '{}');
+      if (!body.texto || !body.quando) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Texto e quando são obrigatórios' }));
+        return;
+      }
+      const newReminder = calendarManager.addLembrete(body.texto, body.quando);
+      res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, reminder: newReminder }));
+    } catch (err: any) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname.startsWith('/api/calendar/reminders/') && pathname.endsWith('/complete') && req.method === 'POST') {
+    const reminderId = pathname.replace('/api/calendar/reminders/', '').replace('/complete', '').trim();
+    const completed = calendarManager.concluirLembrete(reminderId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: completed }));
+    return;
+  }
+
+  if (pathname.startsWith('/api/calendar/reminders/') && req.method === 'DELETE') {
+    const reminderId = pathname.replace('/api/calendar/reminders/', '').trim();
+    const removed = calendarManager.removerLembrete(reminderId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: removed }));
     return;
   }
 

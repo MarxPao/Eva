@@ -1936,6 +1936,166 @@
       background: var(--bg-pill);
       border-color: var(--border-focus);
     }
+
+    /* =========================================================================
+       MÓDULO DE AGENDA & CALENDÁRIO
+       ========================================================================= */
+    .active-reminder-banner {
+      background: rgba(220, 160, 60, 0.14);
+      border: 1px solid rgba(220, 160, 60, 0.5);
+      border-radius: 16px;
+      padding: 12px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    .active-reminder-banner.visible {
+      display: flex;
+    }
+
+    .reminder-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .reminder-bell-icon {
+      font-size: 22px;
+      animation: ringShake 0.6s infinite ease-in-out;
+    }
+
+    .reminder-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .reminder-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .reminder-time {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .reminder-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .reminder-action-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .reminder-action-btn.complete {
+      background: var(--accent-sage);
+      color: #fff;
+    }
+
+    .reminder-action-btn.dismiss {
+      background: var(--bg-card);
+      color: var(--text-secondary);
+    }
+
+    .calendar-events-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .calendar-event-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .calendar-event-item:hover {
+      background: var(--bg-pill-active);
+      border-color: var(--border-focus);
+    }
+
+    .cal-event-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .cal-event-time-badge {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-sage);
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .cal-event-details {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      gap: 2px;
+    }
+
+    .cal-event-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cal-event-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .calendar-reminders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .calendar-reminder-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      background: var(--bg-card-subtle);
+    }
   </style>
 </head>
 <body>
@@ -2155,6 +2315,21 @@
             </div>
           </div>
 
+          <!-- Banner de Alarme / Lembrete em Tempo Real -->
+          <div class="active-reminder-banner" id="active-reminder-banner">
+            <div class="reminder-banner-left">
+              <span class="reminder-bell-icon">🔔</span>
+              <div class="reminder-info">
+                <span class="reminder-title" id="active-reminder-text">Lembrete Programado</span>
+                <span class="reminder-time" id="active-reminder-time">Horário atingido</span>
+              </div>
+            </div>
+            <div class="reminder-banner-right">
+              <button class="reminder-action-btn complete" onclick="dismissActiveReminder(true)">Concluir</button>
+              <button class="reminder-action-btn dismiss" onclick="dismissActiveReminder(false)">Fechar</button>
+            </div>
+          </div>
+
           <!-- Caixa de Transcrição e Resposta da EVA -->
           <div class="speech-transcript-box" id="speech-transcript-box">
             <div class="transcript-empty" id="transcript-placeholder">
@@ -2166,12 +2341,14 @@
           <!-- Chips de Ações Rápidas -->
           <div class="quick-chips-row">
             <button class="chip-btn" onclick="sendQuickMessage('Como está o clima para hoje?')">🌤️ Clima de hoje</button>
+            <button class="chip-btn" onclick="sendQuickMessage('O que eu tenho agendado para hoje?')">📅 Agenda de hoje</button>
+            <button class="chip-btn" onclick="openCalendarModal()">➕ Agendar reunião</button>
+            <button class="chip-btn" onclick="sendQuickMessage('Me lembre de tomar água daqui a pouco')">⏰ Lembrete</button>
             <button class="chip-btn" onclick="triggerCall('mãe')">📞 Ligar pra Mãe</button>
             <button class="chip-btn" onclick="triggerWhatsApp('pai', 'Oi pai, tudo bem? Chego daqui a pouco!')">💬 WhatsApp Pai</button>
             <button class="chip-btn" onclick="openContactsModal()">👥 Contatos</button>
             <button class="chip-btn" onclick="sendQuickMessage('Ligue a luz da sala')">💡 Ligar luz da sala</button>
             <button class="chip-btn" onclick="sendQuickMessage('Destrancar a fechadura')">🔓 Destrancar porta</button>
-            <button class="chip-btn" onclick="sendQuickMessage('Que horas são?')">⏰ Que horas são?</button>
           </div>
 
           <!-- Campo de Mensagem & Botão de Voz -->
@@ -2263,6 +2440,42 @@
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
             <button class="chip-btn" onclick="openContactsModal()" style="width:100%; text-align:center;">👥 Gerenciar Agenda de Contatos</button>
+          </div>
+        </div>
+
+        <!-- CARD: AGENDA & CALENDÁRIO -->
+        <div class="side-widget-card" id="calendar-widget-card">
+          <div class="panel-header-row">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">📅</span>
+              <h3 class="panel-title">Agenda & Calendário</h3>
+            </div>
+            <button class="chip-btn" onclick="openCalendarModal()" style="padding:4px 10px; font-size:11px; background:var(--accent-sage); color:#fff; border:none; cursor:pointer;">➕ Novo</button>
+          </div>
+
+          <!-- Pílulas de Filtro de Data -->
+          <div style="display:flex; gap:6px; margin: 2px 0 6px 0;">
+            <button class="chip-btn active" id="cal-filter-hoje" onclick="filterCalendarView('hoje')">Hoje</button>
+            <button class="chip-btn" id="cal-filter-amanha" onclick="filterCalendarView('amanha')">Amanhã</button>
+            <button class="chip-btn" id="cal-filter-todos" onclick="filterCalendarView('todos')">Todos</button>
+          </div>
+
+          <!-- Lista de Eventos -->
+          <div class="calendar-events-list" id="calendar-events-list">
+            <!-- Injetado dinamicamente -->
+          </div>
+
+          <!-- Seção de Lembretes Rápidos -->
+          <div style="border-top:1px solid var(--border-subtle); padding-top:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:flex; align-items:center; gap:4px;">
+                <span>⏰</span> Lembretes Ativos
+              </span>
+              <span style="font-size:10px; color:var(--text-muted);" id="reminders-count-tag">0 ativos</span>
+            </div>
+            <div class="calendar-reminders-list" id="calendar-reminders-list">
+              <!-- Injetado dinamicamente -->
+            </div>
           </div>
         </div>
 
@@ -2648,6 +2861,84 @@
   </div>
 
   <!-- =========================================================================
+       MODAL DE AGENDAMENTO DE COMPROMISSOS & LEMBRETES
+       ========================================================================= -->
+  <div class="modal-overlay" id="calendar-modal" onclick="closeCalendarModal(event)">
+    <div class="modal-sheet" style="max-width: 680px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">📅</span>
+          <h4 class="modal-title">Novo Compromisso / Lembrete</h4>
+        </div>
+        <button class="modal-close-btn" onclick="closeCalendarModal()">✕</button>
+      </div>
+
+      <!-- Abas de Tipo (Compromisso vs Lembrete) -->
+      <div class="cfg-tabs-nav" style="margin-bottom: 4px;">
+        <button class="cfg-tab-btn active" id="cal-tab-btn-evento" onclick="switchCalendarModalTab('evento')">
+          <span>📅</span> Compromisso / Reunião
+        </button>
+        <button class="cfg-tab-btn" id="cal-tab-btn-lembrete" onclick="switchCalendarModalTab('lembrete')">
+          <span>⏰</span> Lembrete Rápido
+        </button>
+      </div>
+
+      <!-- Formulário: Compromisso -->
+      <div id="cal-form-evento" style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="new-evt-title" class="chat-text-field" placeholder="Título (ex: Reunião com Equipe, Dentista)" style="border-radius: 12px; padding: 10px 14px;">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Data:</label>
+            <input type="date" id="new-evt-date" class="chat-text-field" style="border-radius: 10px; padding: 8px 12px; width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Categoria:</label>
+            <select id="new-evt-cat" class="chat-text-field" style="border-radius: 10px; padding: 8px 12px; width: 100%;">
+              <option value="reuniao">Reunião</option>
+              <option value="trabalho">Trabalho</option>
+              <option value="pessoal">Pessoal</option>
+              <option value="saude">Saúde</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Início:</label>
+            <input type="time" id="new-evt-start" class="chat-text-field" style="border-radius: 10px; padding: 8px 12px; width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Término:</label>
+            <input type="time" id="new-evt-end" class="chat-text-field" style="border-radius: 10px; padding: 8px 12px; width: 100%;">
+          </div>
+        </div>
+
+        <input type="text" id="new-evt-location" class="chat-text-field" placeholder="Local ou Link (ex: Google Meet, Sala 4)" style="border-radius: 12px; padding: 10px 14px;">
+        <input type="text" id="new-evt-desc" class="chat-text-field" placeholder="Descrição / Pauta (opcional)" style="border-radius: 12px; padding: 10px 14px;">
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+          <button class="btn-top" onclick="handleSaveNewEvent()" style="background: var(--accent-sage); color: #fff; border: none; font-weight: 600; padding: 10px 20px; border-radius: 12px; cursor: pointer;">
+            Salvar Compromisso
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulário: Lembrete Rápido -->
+      <div id="cal-form-lembrete" style="display: none; flex-direction: column; gap: 10px;">
+        <input type="text" id="new-rem-text" class="chat-text-field" placeholder="O que você precisa lembrar? (ex: Tomar remédio)" style="border-radius: 12px; padding: 10px 14px;">
+        <input type="text" id="new-rem-when" class="chat-text-field" placeholder="Quando? (ex: às 18:00, amanhã às 9h, em 20 minutos)" style="border-radius: 12px; padding: 10px 14px;">
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+          <button class="btn-top" onclick="handleSaveNewReminder()" style="background: var(--accent-sage); color: #fff; border: none; font-weight: 600; padding: 10px 20px; border-radius: 12px; cursor: pointer;">
+            Criar Lembrete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        LOGICA JAVASCRIPT: SINCRONIZAÇÃO, VOZ, BLUETOOTH & ESTADO
        ========================================================================= -->
   <script>
@@ -2678,6 +2969,12 @@
       telephony: {
         activeCall: null,
         contacts: []
+      },
+      calendar: {
+        filter: 'hoje',
+        events: [],
+        reminders: [],
+        activeReminder: null
       },
       mediaRecorder: null,
       audioChunks: []
@@ -2910,6 +3207,266 @@
         }
       } catch (err) {
         console.error('[handleDeleteContact]', err);
+      }
+    }
+
+    // =========================================================================
+    // INTEGRAÇÃO AGENDA DE COMPROMISSOS, CALENDÁRIO & LEMBRETES
+    // =========================================================================
+    let activeReminderTimeout = null;
+
+    async function fetchCalendarData(filter = state.calendar.filter) {
+      state.calendar.filter = filter;
+      try {
+        const dateQuery = filter === 'todos' ? '' : filter;
+        const [evtsRes, remsRes] = await Promise.all([
+          fetch(`/api/calendar/events?date=${encodeURIComponent(dateQuery)}`),
+          fetch('/api/calendar/reminders')
+        ]);
+        const evtsData = await evtsRes.json();
+        const remsData = await remsRes.json();
+
+        if (evtsData.success && Array.isArray(evtsData.events)) {
+          state.calendar.events = evtsData.events;
+        }
+        if (remsData.success && Array.isArray(remsData.reminders)) {
+          state.calendar.reminders = remsData.reminders;
+        }
+
+        renderCalendarWidget();
+      } catch (err) {
+        console.warn('[fetchCalendarData]', err);
+      }
+    }
+
+    function filterCalendarView(filter) {
+      document.querySelectorAll('#calendar-widget-card .chip-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`cal-filter-${filter}`)?.classList.add('active');
+      fetchCalendarData(filter);
+    }
+
+    function renderCalendarWidget() {
+      const eventsList = document.getElementById('calendar-events-list');
+      const remindersList = document.getElementById('calendar-reminders-list');
+      const countTag = document.getElementById('reminders-count-tag');
+
+      if (eventsList) {
+        if (!state.calendar.events || state.calendar.events.length === 0) {
+          eventsList.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px;">Nenhum compromisso para este período.</div>`;
+        } else {
+          eventsList.innerHTML = state.calendar.events.map(e => `
+            <div class="calendar-event-item">
+              <div class="cal-event-left">
+                <div class="cal-event-time-badge">${e.horaInicio || 'Livre'}</div>
+                <div class="cal-event-details">
+                  <div class="cal-event-title" title="${e.titulo}">${e.titulo}</div>
+                  <div class="cal-event-meta">
+                    <span>📍 ${e.local || 'Geral'}</span>
+                    <span>· 📅 ${e.data}</span>
+                  </div>
+                </div>
+              </div>
+              <button class="telephony-action-btn" onclick="handleDeleteEvent('${e.id}')" title="Desmarcar compromisso" style="color:var(--accent-coral);">✕</button>
+            </div>
+          `).join('');
+        }
+      }
+
+      if (remindersList) {
+        const activeRems = state.calendar.reminders.filter(r => r.status === 'agendado');
+        if (countTag) countTag.textContent = `${activeRems.length} ativo(s)`;
+
+        if (activeRems.length === 0) {
+          remindersList.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:4px;">Nenhum lembrete pendente.</div>`;
+        } else {
+          remindersList.innerHTML = activeRems.slice(0, 3).map(r => `
+            <div class="calendar-reminder-row">
+              <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+                <input type="checkbox" onchange="handleCompleteReminder('${r.id}')" style="cursor:pointer;" title="Marcar como concluído">
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-primary); font-weight:500;">${r.texto}</span>
+              </div>
+              <span style="font-size:10px; color:var(--accent-sage); font-weight:700; white-space:nowrap; margin-left:6px;">${r.horaAlvo || r.quando}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    function openCalendarModal(tab = 'evento') {
+      const modal = document.getElementById('calendar-modal');
+      if (modal) modal.classList.add('open');
+      switchCalendarModalTab(tab);
+      const dateInput = document.getElementById('new-evt-date');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    function closeCalendarModal(e) {
+      if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close-btn')) return;
+      const modal = document.getElementById('calendar-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function switchCalendarModalTab(tab) {
+      const btnEvt = document.getElementById('cal-tab-btn-evento');
+      const btnRem = document.getElementById('cal-tab-btn-lembrete');
+      const formEvt = document.getElementById('cal-form-evento');
+      const formRem = document.getElementById('cal-form-lembrete');
+
+      if (tab === 'evento') {
+        btnEvt?.classList.add('active');
+        btnRem?.classList.remove('active');
+        if (formEvt) formEvt.style.display = 'flex';
+        if (formRem) formRem.style.display = 'none';
+      } else {
+        btnRem?.classList.add('active');
+        btnEvt?.classList.remove('active');
+        if (formRem) formRem.style.display = 'flex';
+        if (formEvt) formEvt.style.display = 'none';
+      }
+    }
+
+    async function handleSaveNewEvent() {
+      const titulo = document.getElementById('new-evt-title')?.value.trim();
+      const data = document.getElementById('new-evt-date')?.value.trim();
+      const horaInicio = document.getElementById('new-evt-start')?.value.trim();
+      const horaFim = document.getElementById('new-evt-end')?.value.trim();
+      const local = document.getElementById('new-evt-location')?.value.trim();
+      const descricao = document.getElementById('new-evt-desc')?.value.trim();
+      const categoria = document.getElementById('new-evt-cat')?.value;
+
+      if (!titulo || !data) {
+        alert('Título e Data são obrigatórios!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/calendar/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titulo, data, horaInicio, horaFim, local, descricao, categoria })
+        });
+        const resData = await res.json();
+        if (resData.success) {
+          if (document.getElementById('new-evt-title')) document.getElementById('new-evt-title').value = '';
+          if (document.getElementById('new-evt-location')) document.getElementById('new-evt-location').value = '';
+          if (document.getElementById('new-evt-desc')) document.getElementById('new-evt-desc').value = '';
+          closeCalendarModal();
+          await fetchCalendarData();
+        } else {
+          alert('Erro ao agendar compromisso: ' + (resData.error || 'Desconhecido'));
+        }
+      } catch (err) {
+        console.error('[handleSaveNewEvent]', err);
+      }
+    }
+
+    async function handleSaveNewReminder() {
+      const texto = document.getElementById('new-rem-text')?.value.trim();
+      const quando = document.getElementById('new-rem-when')?.value.trim();
+
+      if (!texto || !quando) {
+        alert('Texto e horário/quando são obrigatórios!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/calendar/reminders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto, quando })
+        });
+        const resData = await res.json();
+        if (resData.success) {
+          if (document.getElementById('new-rem-text')) document.getElementById('new-rem-text').value = '';
+          if (document.getElementById('new-rem-when')) document.getElementById('new-rem-when').value = '';
+          closeCalendarModal();
+          await fetchCalendarData();
+        } else {
+          alert('Erro ao criar lembrete.');
+        }
+      } catch (err) {
+        console.error('[handleSaveNewReminder]', err);
+      }
+    }
+
+    async function handleDeleteEvent(id) {
+      if (!confirm('Deseja cancelar este compromisso da agenda?')) return;
+      try {
+        await fetch(`/api/calendar/events/${id}`, { method: 'DELETE' });
+        await fetchCalendarData();
+      } catch (err) {
+        console.error('[handleDeleteEvent]', err);
+      }
+    }
+
+    async function handleCompleteReminder(id) {
+      try {
+        await fetch(`/api/calendar/reminders/${id}/complete`, { method: 'POST' });
+        await fetchCalendarData();
+      } catch (err) {
+        console.error('[handleCompleteReminder]', err);
+      }
+    }
+
+    function handleCalendarSseEvent(evt) {
+      if (!evt) return;
+      if (evt.action === 'reminder_due') {
+        const banner = document.getElementById('active-reminder-banner');
+        const textEl = document.getElementById('active-reminder-text');
+        const timeEl = document.getElementById('active-reminder-time');
+
+        state.calendar.activeReminder = evt.item;
+
+        if (textEl) textEl.textContent = `⏰ Lembrete: ${evt.item?.texto}`;
+        if (timeEl) timeEl.textContent = `Programado para ${evt.item?.quando || 'agora'}`;
+        if (banner) banner.classList.add('visible');
+
+        playNotificationChime();
+        appendSerialLog('CAL', `🔔 Lembrete disparado: "${evt.item?.texto}"`, 'sys');
+
+        if (activeReminderTimeout) clearTimeout(activeReminderTimeout);
+        activeReminderTimeout = setTimeout(() => {
+          if (banner) banner.classList.remove('visible');
+        }, 12000);
+      } else {
+        fetchCalendarData();
+      }
+    }
+
+    async function dismissActiveReminder(markComplete = false) {
+      const banner = document.getElementById('active-reminder-banner');
+      if (banner) banner.classList.remove('visible');
+      if (markComplete && state.calendar.activeReminder?.id) {
+        await handleCompleteReminder(state.calendar.activeReminder.id);
+      }
+      state.calendar.activeReminder = null;
+    }
+
+    function playNotificationChime() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+      } catch (e) {
+        console.warn('[playNotificationChime error]', e);
       }
     }
 
@@ -3883,6 +4440,12 @@
             handleTelephonyEvent(data);
             return;
           }
+
+          // 8.6 Eventos de Agenda, Calendário e Lembretes
+          if (data.type === 'calendar_event') {
+            handleCalendarSseEvent(data);
+            return;
+          }
         } catch (e) {
           console.warn('[SSE Parse Error]', e);
         }
@@ -4785,6 +5348,7 @@
       setAudioOutput(audioOutputDestination);
       syncBackendStatus();
       loadContacts();
+      fetchCalendarData('hoje');
     });
   </script>
 

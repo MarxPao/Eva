@@ -2,6 +2,8 @@ import { ToolRegistry } from '../core/tools/tool-registry';
 import { consultarClimaTool } from './low-risk/consultar-clima';
 import { criarLembreteTool } from './low-risk/criar-lembrete';
 import { consultarAgendaTool } from './low-risk/consultar-agenda';
+import { agendarCompromissoTool } from './low-risk/agendar-compromisso';
+import { removerCompromissoTool } from './low-risk/remover-compromisso';
 import { buscarWebTool } from './low-risk/buscar-web';
 import { consultarDataHoraTool } from './low-risk/consultar-data-hora';
 import { consultarLogsSistemaTool } from './low-risk/consultar-logs-sistema';
@@ -25,6 +27,8 @@ export const ALL_TOOLS = [
   consultarClimaTool,
   criarLembreteTool,
   consultarAgendaTool,
+  agendarCompromissoTool,
+  removerCompromissoTool,
   buscarWebTool,
   consultarDataHoraTool,
   consultarLogsSistemaTool,
@@ -52,6 +56,8 @@ export {
   consultarClimaTool,
   criarLembreteTool,
   consultarAgendaTool,
+  agendarCompromissoTool,
+  removerCompromissoTool,
   buscarWebTool,
   consultarDataHoraTool,
   consultarLogsSistemaTool,
