@@ -56,10 +56,11 @@ rtk git commit -m "<mensagem semântica>"
    * No **Modo Noite**, a Lua fica posicionada na curva superior direita do arco.
    * Alternância suave ao clicar no astro celeste.
 
-3. **Saída de Áudio Bluetooth & ESP32 (`eva_arduino/eva_arduino.ino`):**
-   * Dispositivo alvo configurado: **`BT-SPEAKER`** (`#define BT_ENABLED 1`).
-   * VAD ajustado para 88 frames de silêncio (~1.4s) para evitar cortes precoces durante a fala.
-   * WebSocket em `/api/esp32/ws`.
+3. **Modo de Operação ESP32 (`eva_arduino/eva_arduino.ino`):**
+   * **Papel:** Microfone sem fio de alta performance (INMP441 via I2S, VAD de baixa latência e streaming PCM via WebSocket para o backend Node.js no PC).
+   * **Bluetooth:** 100% desligado (`esp_bt_controller_mem_release(ESP_BT_MODE_BTDM)`). Sem alocação de Bluedroid ou A2DP, garantindo mais de **195 KB de Heap livre** permanente e zero watchdog resets.
+   * **Saída de Áudio:** Alto-falantes nativos do PC / navegador web (`index.html`) via chunks sintetizados Edge-TTS.
+   * **Pinagem INMP441:** SD no GPIO 32, WS no GPIO 25 (espelhado no 15), SCK no GPIO 14, VDD em 3.3V, GND/L/R no GND.
 
 ---
 
