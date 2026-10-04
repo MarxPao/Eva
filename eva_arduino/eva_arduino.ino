@@ -42,8 +42,10 @@ const char* SERVER_VOICE_URL = "http://192.168.2.146:8080/api/pipeline/voice";
   #include "BluetoothA2DPSource.h"
   #include "esp_coexist.h"
   #include "esp_bt.h"
+  #include "rom/gpio.h"
+  #include "soc/gpio_sig_map.h"
   #define I2S_SD_PIN   32  // Serial Data / DOUT (compartilhado por ambos os microfones)
-  #define I2S_WS_PIN   15  // Word Select / LRCLK (compartilhado)
+  #define I2S_WS_PIN   25  // Word Select / LRCLK (movido do GPIO 15 para 25; evita strapping pin)
   #define I2S_SCK_PIN  14  // Serial Clock / BCLK (compartilhado)
   #define LED_PIN      2   // LED Azul onboard padrão do ESP32 clássico
   #define LOG_PRINTLN(x) Serial.println(x)
@@ -492,7 +494,15 @@ void i2sMicInit() {
     return;
   }
 
-  LOG_PRINTLN("[I2S] Microfone inicializado com captura estéreo.");
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  // Espelhamento de transição via GPIO Matrix:
+  // Roteia o clock WS (I2S0I_WS_OUT_IDX) também no GPIO 15, garantindo funcionamento
+  // transparente caso o usuário ainda não tenha transferido o fio físico de 15 para 25.
+  pinMode(15, OUTPUT);
+  gpio_matrix_out(15, I2S0I_WS_OUT_IDX, false, false);
+#endif
+
+  LOG_PRINTLN("[I2S] Microfone inicializado com captura estéreo (WS no GPIO 25 + espelho GPIO 15).");
 }
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
