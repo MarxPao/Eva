@@ -212,6 +212,7 @@ export class A2DPStreamer {
     if (this.wsClient && this.wsClient.readyState === 1 /* OPEN */) {
       try {
         this.wsClient.send(JSON.stringify({ cmd: 'interrupt' }));
+        this.wsClient.send(JSON.stringify({ cmd: 'speaking_end', interrupt: true }));
       } catch {}
     }
   }

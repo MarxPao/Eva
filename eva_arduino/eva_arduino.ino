@@ -310,6 +310,10 @@ unsigned long lastPostTime = 0;
 #define MIN_SPEECH_FRAMES         4        // Pelo menos 4 frames (~64ms) de energia de voz
 #define MIN_RECORDED_SAMPLES      4800     // Pelo menos 300ms gravados
 
+// Limiar e sensibilidade para interrupção de fala legítima (Barge-In) durante reprodução da EVA
+#define VAD_BARGE_IN_THRESHOLD_RMS 4200.0f // Exige voz alta próxima ao microfone para superar o som da caixa
+#define VAD_BARGE_IN_TRIGGER_FRAMES 6      // ~96ms de voz alta sustentada para Barge-In
+
 // Pré-roll circular de ~128ms (8 blocos de 256 amostras) para garantir captura integral do "Eva"
 #define PREROLL_FRAMES            8
 #define PREROLL_SAMPLES           (PREROLL_FRAMES * BUFFER_PAIRS)
@@ -431,13 +435,13 @@ void sendVoiceToBackend(unsigned long t0_cutoff = 0) {
       unsigned long dur = response.substring(durIdx + 13).toInt();
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
       if (dur >= 2000 && dur <= 60000 && isBtSpeakerConnected) {
-        speakerMuteUntil = millis() + dur;
-        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur);
+        speakerMuteUntil = millis() + dur + 500;
+        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur + 500);
       }
 #else
       if (dur >= 2000 && dur <= 60000) {
-        speakerMuteUntil = millis() + dur;
-        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur);
+        speakerMuteUntil = millis() + dur + 500;
+        LOG_PRINTF("[AEC] 🔇 Mudo ativado pela resposta da EVA: %lu ms.\n", dur + 500);
       }
 #endif
     }
@@ -576,28 +580,28 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
         LOG_PRINTLN("[TTS] 🔊 Início de reprodução TTS via Bluetooth A2DP...");
       } else if (msg.indexOf("\"tts_end\"") >= 0) {
         LOG_PRINTLN("[TTS] 🔈 Fim do streaming de áudio TTS.");
-      } else if (msg.indexOf("\"cmd\":\"speaker\"") >= 0 || msg.indexOf("\"speaker\"") >= 0) {
-        if (msg.indexOf("true") >= 0) {
-          unsigned long dur = 5000;
-          int durIdx = msg.indexOf("\"durationMs\":");
-          if (durIdx >= 0) {
-            unsigned long parsed = msg.substring(durIdx + 13).toInt();
-            if (parsed >= 1000 && parsed <= 60000) dur = parsed;
-          }
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-          if (isBtSpeakerConnected) {
-            speakerMuteUntil = millis() + dur;
-            LOG_PRINTF("[AEC] 🔊 Alto-falante ativo. Janela de áudio: %lu ms.\n", dur);
-          } else {
-            speakerMuteUntil = 0;
-          }
-#else
-          speakerMuteUntil = millis() + dur;
-          LOG_PRINTF("[AEC] 🔊 Alto-falante ativo. Janela de áudio: %lu ms.\n", dur);
-#endif
-        } else {
+      } else if (msg.indexOf("\"cmd\":\"speaking_start\"") >= 0 || msg.indexOf("\"speaking_start\"") >= 0 ||
+                 (msg.indexOf("\"cmd\":\"speaker\"") >= 0 && msg.indexOf("true") >= 0)) {
+        unsigned long dur = 5000;
+        int durIdx = msg.indexOf("\"durationMs\":");
+        if (durIdx >= 0) {
+          unsigned long parsed = msg.substring(durIdx + 13).toInt();
+          if (parsed >= 500 && parsed <= 120000) dur = parsed;
+        }
+        // Folga de ~500ms por causa do buffer interno da caixinha Bluetooth
+        speakerMuteUntil = millis() + dur + 500;
+        LOG_PRINTF("[AEC] 🔊 EVA falando (speaking_start). Janela com folga BT: %lu ms.\n", dur + 500);
+      } else if (msg.indexOf("\"cmd\":\"speaking_end\"") >= 0 || msg.indexOf("\"speaking_end\"") >= 0 ||
+                 (msg.indexOf("\"cmd\":\"speaker\"") >= 0 && msg.indexOf("false") >= 0)) {
+        bool isInterrupt = (msg.indexOf("\"interrupt\":true") >= 0 || msg.indexOf("\"interrupt\": true") >= 0);
+        if (isInterrupt) {
           speakerMuteUntil = 0;
-          LOG_PRINTLN("[AEC] 🔈 Alto-falante finalizado. VAD pronto.");
+          ttsBufferClear();
+          LOG_PRINTLN("[AEC] ⚡ Interrupção de fala (Barge-In). VAD reativado imediatamente.");
+        } else {
+          // Mantém folga de 500ms para permitir que os últimos bytes no buffer interno da caixinha terminem de tocar
+          speakerMuteUntil = millis() + 500;
+          LOG_PRINTLN("[AEC] 🔈 EVA finalizou fala (speaking_end). Folga de 500ms para esvaziar buffer BT.");
         }
       } else if (msg.indexOf("\"cmd\":\"conversation_log\"") >= 0) {
         int statusIdx = msg.indexOf("\"status\":");
@@ -889,22 +893,29 @@ void loop() {
       }
       prerollHead = (prerollHead + pairs) % PREROLL_SAMPLES;
 
-      // Limiar dinâmico de VAD com AEC: se a EVA estiver falando pela caixa BT conectada,
-      // eleva o limiar para 3200 RMS para que o som da caixa não dispare o microfone
+      // Limiar dinâmico de VAD com AEC: se a EVA estiver falando (pelo tempo do speaking_start ou buffer com dados),
+      // eleva o limiar para 4200 RMS para que o som da caixa não dispare o microfone, mas permitindo Barge-In legítimo
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-      bool isSpeakerActive = isBtSpeakerConnected && ((millis() < speakerMuteUntil) || (ttsBufferAvailable() > 0));
+      bool isSpeakerActive = (millis() < speakerMuteUntil) || (isBtSpeakerConnected && ttsBufferAvailable() > 0);
 #else
       bool isSpeakerActive = (millis() < speakerMuteUntil);
 #endif
-      float currentVadThreshold = isSpeakerActive ? 3200.0f : VAD_THRESHOLD_RMS;
+      float currentVadThreshold = isSpeakerActive ? VAD_BARGE_IN_THRESHOLD_RMS : VAD_THRESHOLD_RMS;
+      uint8_t requiredTriggerFrames = isSpeakerActive ? VAD_BARGE_IN_TRIGGER_FRAMES : VAD_TRIGGER_FRAMES;
 
       // Fala humana sustentada detectada (RMS >= currentVadThreshold)
       if (activeRms >= currentVadThreshold) {
         voiceDetectFrames++;
-        if (voiceDetectFrames >= VAD_TRIGGER_FRAMES) { // ~80ms de fala sustentada
+        if (voiceDetectFrames >= requiredTriggerFrames) {
+          if (isSpeakerActive) {
+            LOG_PRINTF("[BARGE-IN] ⚡ Interrupção por voz alta durante fala da EVA (RMS: %.1f >= %.1f). Silenciando áudio!\n",
+                       activeRms, currentVadThreshold);
+            ttsBufferClear();     // Limpa o buffer local de áudio para não vazar eco na gravação
+            speakerMuteUntil = 0; // Libera o microfone para gravar o usuário com máxima sensibilidade
+          }
           micState = STATE_RECORDING;
           silenceFrames = 0;
-          speechFramesCount = VAD_TRIGGER_FRAMES;
+          speechFramesCount = requiredTriggerFrames;
           streamChunkIndex = 0;
           digitalWrite(LED_PIN, HIGH);
           LOG_PRINTLN("[EVA] 🎙️ Fala humana detectada! Gravando e transmitindo...");

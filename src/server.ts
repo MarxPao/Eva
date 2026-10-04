@@ -338,7 +338,8 @@ export function interruptActiveInteraction(newPrompt?: string): {
     // Notifica o ESP32 para reativar o VAD imediatamente sem espera
     if (espWsClient && isEspWsConnected) {
       try {
-        espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: false, interrupt: true }));
+        espWsClient.send(JSON.stringify({ cmd: 'speaking_end', interrupt: true }));
+        espWsClient.send(JSON.stringify({ cmd: 'interrupt' }));
       } catch (e) {}
     }
 
@@ -611,14 +612,15 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
           hasDispatchedFirstAudio = true;
           trace.mark('t6');
           // Imediatamente marca a EVA como falando para que o ESP32 e o AEC ativem proteção
+          const initDurationMs = Math.max(6000, Math.round((activeInteraction?.partialReply?.length || 60) * 75 + 1500));
           if (activeInteraction && activeInteraction.id === currentInteractionId) {
             activeInteraction.isSpeaking = true;
-            activeInteraction.speakingUntil = Date.now() + 6000;
+            activeInteraction.speakingUntil = Date.now() + initDurationMs;
           }
-          lastSpeakerActiveTime = Date.now() + 6000;
+          lastSpeakerActiveTime = Date.now() + initDurationMs;
           if (espWsClient && isEspWsConnected) {
             try {
-              espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: true, durationMs: 6000 }));
+              espWsClient.send(JSON.stringify({ cmd: 'speaking_start', speaking: true, durationMs: initDurationMs }));
             } catch {}
           }
         }
@@ -649,10 +651,12 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     }
 
     // 5. Calcula duração estimada da fala para o AEC (Cancelamento de Eco)
+    // Edge-TTS em pt-BR tem taxa média de ~13 caracteres/segundo (~75ms/char).
+    // Adicionamos 1500ms de margem de folga para pontuação, respiração e buffers de áudio.
     const textLen = (result.agentResult.textResponse || '').length;
     const estDurationMs = result.responseAudioBuffer
-      ? Math.max(2500, Math.round((result.responseAudioBuffer.length / 6000 + 0.8) * 1000))
-      : Math.max(2500, Math.round(textLen * 50 + 800));
+      ? Math.max(3500, Math.round((result.responseAudioBuffer.length / 6000) * 1000 + 1500))
+      : Math.max(3500, Math.round(textLen * 75 + 1500));
 
     if (activeInteraction && activeInteraction.id === currentInteractionId) {
       activeInteraction.speakingUntil = Date.now() + estDurationMs;
@@ -664,7 +668,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
         }
         if (espWsClient && isEspWsConnected) {
           try {
-            espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: false }));
+            espWsClient.send(JSON.stringify({ cmd: 'speaking_end', speaking: false }));
           } catch {}
         }
       }, estDurationMs);
@@ -707,7 +711,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     // 6. Notifica o ESP32 sobre a fala e o log de conversação para o Monitor Serial
     if (espWsClient && isEspWsConnected) {
       try {
-        espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: true, durationMs: estDurationMs }));
+        espWsClient.send(JSON.stringify({ cmd: 'speaking_start', speaking: true, durationMs: estDurationMs }));
         espWsClient.send(JSON.stringify({
           cmd: 'conversation_log',
           status: 'answered',
@@ -754,7 +758,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     console.error('[processVoiceAudioBuffer Erro]', err);
     if (espWsClient && isEspWsConnected) {
       try {
-        espWsClient.send(JSON.stringify({ cmd: 'speaker', speaking: false }));
+        espWsClient.send(JSON.stringify({ cmd: 'speaking_end', speaking: false }));
         espWsClient.send(JSON.stringify({
           cmd: 'conversation_log',
           status: 'error',
@@ -847,6 +851,10 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
         const parsed = JSON.parse(textMsg);
         if (parsed.type === 'audio_stream_start') {
           console.log(`[WS Streaming T1] 🎙️ Início de captura de áudio recebido do hardware ESP32!`);
+          if (activeInteraction?.isSpeaking) {
+            console.log(`[WS Streaming T1] ⚡ Interrupção (Barge-In) detectada no hardware durante reprodução. Interrompendo áudio A2DP.`);
+            a2dpStreamer.stop();
+          }
           if (activeStreamSession?.safetyTimer) {
             clearTimeout(activeStreamSession.safetyTimer);
           }
