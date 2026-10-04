@@ -84,37 +84,69 @@ void printMemoryReport(const char* tag) {
   static esp_bd_addr_t targetBtMac = {0};
   static bool hasTargetMac = false;
 
-  // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (4KB = ~23ms a 44.1kHz estéreo)
-  #define TTS_BUFFER_SIZE (4 * 1024)
+  // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (8KB = ~93ms a 44.1kHz mono 16-bit)
+  #define TTS_BUFFER_SIZE (8 * 1024)
   static uint8_t* ttsRingBuffer = nullptr;
   static volatile size_t ttsHead = 0;
   static volatile size_t ttsTail = 0;
   static portMUX_TYPE ttsMux = portMUX_INITIALIZER_UNLOCKED;
 
-  void ttsBufferPush(const uint8_t* data, size_t len) {
-    if (ttsRingBuffer == nullptr) return;
+  size_t ttsBufferPush(const uint8_t* data, size_t len) {
+    if (ttsRingBuffer == nullptr || len == 0) return 0;
     portENTER_CRITICAL(&ttsMux);
-    for (size_t i = 0; i < len; i++) {
-      size_t nextHead = (ttsHead + 1) % TTS_BUFFER_SIZE;
-      if (nextHead == ttsTail) {
-        ttsTail = (ttsTail + 1) % TTS_BUFFER_SIZE;
-      }
-      ttsRingBuffer[ttsHead] = data[i];
-      ttsHead = nextHead;
+    size_t currentTail = ttsTail;
+    size_t currentHead = ttsHead;
+
+    size_t availableSpace = (currentTail > currentHead)
+        ? (currentTail - currentHead - 1)
+        : (TTS_BUFFER_SIZE - currentHead + currentTail - 1);
+
+    size_t toWrite = (len > availableSpace) ? availableSpace : len;
+    if (toWrite == 0) {
+      portEXIT_CRITICAL(&ttsMux);
+      return 0;
     }
+
+    size_t firstPart = (currentHead + toWrite <= TTS_BUFFER_SIZE) ? toWrite : (TTS_BUFFER_SIZE - currentHead);
+    size_t secondPart = toWrite - firstPart;
+
+    memcpy(ttsRingBuffer + currentHead, data, firstPart);
+    if (secondPart > 0) {
+      memcpy(ttsRingBuffer, data + firstPart, secondPart);
+    }
+
+    ttsHead = (currentHead + toWrite) % TTS_BUFFER_SIZE;
     portEXIT_CRITICAL(&ttsMux);
+    return toWrite;
   }
 
   size_t ttsBufferPop(uint8_t* dest, size_t maxLen) {
-    if (ttsRingBuffer == nullptr) return 0;
+    if (ttsRingBuffer == nullptr || maxLen == 0) return 0;
     portENTER_CRITICAL(&ttsMux);
-    size_t bytesRead = 0;
-    while (bytesRead < maxLen && ttsTail != ttsHead) {
-      dest[bytesRead++] = ttsRingBuffer[ttsTail];
-      ttsTail = (ttsTail + 1) % TTS_BUFFER_SIZE;
+    size_t currentTail = ttsTail;
+    size_t currentHead = ttsHead;
+
+    size_t availableBytes = (currentHead >= currentTail)
+        ? (currentHead - currentTail)
+        : (TTS_BUFFER_SIZE - currentTail + currentHead);
+
+    size_t toRead = (maxLen > availableBytes) ? availableBytes : maxLen;
+    if (toRead == 0) {
+      portEXIT_CRITICAL(&ttsMux);
+      return 0;
     }
+
+    size_t firstPart = (currentTail + toRead <= TTS_BUFFER_SIZE) ? toRead : (TTS_BUFFER_SIZE - currentTail);
+    size_t secondPart = toRead - firstPart;
+
+    memcpy(dest, ttsRingBuffer + currentTail, firstPart);
+    if (secondPart > 0) {
+      memcpy(dest + firstPart, ttsRingBuffer, secondPart);
+    }
+
+    ttsTail = (currentTail + toRead) % TTS_BUFFER_SIZE;
     portEXIT_CRITICAL(&ttsMux);
-    return bytesRead;
+    return toRead;
   }
 
   void ttsBufferClear() {
@@ -132,6 +164,18 @@ void printMemoryReport(const char* tag) {
     return count;
   }
 
+  size_t ttsBufferFreeSpace() {
+    if (ttsRingBuffer == nullptr) return 0;
+    portENTER_CRITICAL(&ttsMux);
+    size_t currentTail = ttsTail;
+    size_t currentHead = ttsHead;
+    size_t freeSpace = (currentTail > currentHead)
+        ? (currentTail - currentHead - 1)
+        : (TTS_BUFFER_SIZE - currentHead + currentTail - 1);
+    portEXIT_CRITICAL(&ttsMux);
+    return freeSpace;
+  }
+
   BluetoothA2DPSource a2dp_source;
   static volatile bool isBtSpeakerConnected = false;
   static volatile bool newScanDevice = false;
@@ -140,10 +184,23 @@ void printMemoryReport(const char* tag) {
   static volatile int lastScanRssi = 0;
 
   int32_t a2dp_data_callback(Frame* data, int32_t len) {
-    size_t bytesNeeded = len * sizeof(Frame);
-    size_t bytesRead = ttsBufferPop((uint8_t*)data, bytesNeeded);
-    if (bytesRead < bytesNeeded) {
-      memset(((uint8_t*)data) + bytesRead, 0, bytesNeeded - bytesRead);
+    // Processa amostras PCM Mono 16-bit (44.1kHz) do ring buffer e expande para Estéreo (L=R)
+    size_t framesDone = 0;
+    while (framesDone < (size_t)len) {
+      size_t batch = ((size_t)len - framesDone > 256) ? 256 : ((size_t)len - framesDone);
+      int16_t monoBuf[256];
+      size_t bytesRead = ttsBufferPop((uint8_t*)monoBuf, batch * sizeof(int16_t));
+      size_t samplesRead = bytesRead / sizeof(int16_t);
+
+      for (size_t i = 0; i < samplesRead; i++) {
+        data[framesDone + i].channel1 = monoBuf[i];
+        data[framesDone + i].channel2 = monoBuf[i];
+      }
+      for (size_t i = samplesRead; i < batch; i++) {
+        data[framesDone + i].channel1 = 0;
+        data[framesDone + i].channel2 = 0;
+      }
+      framesDone += batch;
     }
     return len;
   }
@@ -448,14 +505,21 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
       snprintf(btInitJson, sizeof(btInitJson), "{\"type\":\"bt_state\",\"connected\":%s,\"deviceName\":\"%s\"}",
                curConnected ? "true" : "false", BT_SPEAKER_NAME);
       webSocket.sendTXT(btInitJson);
+
+      char flowJson[64];
+      snprintf(flowJson, sizeof(flowJson), "{\"type\":\"flow_control\",\"free_bytes\":%u}", (unsigned int)ttsBufferFreeSpace());
+      webSocket.sendTXT(flowJson);
 #endif
       break;
     }
     case WStype_BIN: {
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-      // Áudio PCM 44.1kHz estéreo recebido para tocar na caixa Bluetooth
+      // Áudio PCM 44.1kHz Mono 16-bit recebido para tocar na caixa Bluetooth
       if (isBtSpeakerConnected && payload != nullptr && length > 0) {
         ttsBufferPush(payload, length);
+        char flowJson[64];
+        snprintf(flowJson, sizeof(flowJson), "{\"type\":\"flow_control\",\"free_bytes\":%u}", (unsigned int)ttsBufferFreeSpace());
+        webSocket.sendTXT(flowJson);
       } else {
         ttsBufferClear();
       }
@@ -505,6 +569,9 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
       } else if (msg.indexOf("\"tts_start\"") >= 0) {
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
         ttsBufferClear();
+        char flowJson[64];
+        snprintf(flowJson, sizeof(flowJson), "{\"type\":\"flow_control\",\"free_bytes\":%u}", (unsigned int)ttsBufferFreeSpace());
+        webSocket.sendTXT(flowJson);
 #endif
         LOG_PRINTLN("[TTS] 🔊 Início de reprodução TTS via Bluetooth A2DP...");
       } else if (msg.indexOf("\"tts_end\"") >= 0) {
@@ -692,6 +759,21 @@ void loop() {
   }
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
+  static unsigned long lastFlowReport = 0;
+  static size_t lastReportedFree = 0;
+  if (isBtSpeakerConnected && (ttsBufferAvailable() > 0 || millis() - lastFlowReport < 400)) {
+    if (millis() - lastFlowReport >= 30) {
+      size_t curFree = ttsBufferFreeSpace();
+      if (abs((long)curFree - (long)lastReportedFree) >= 512 && webSocket.isConnected()) {
+        lastFlowReport = millis();
+        lastReportedFree = curFree;
+        char flowJson[64];
+        snprintf(flowJson, sizeof(flowJson), "{\"type\":\"flow_control\",\"free_bytes\":%u}", (unsigned int)curFree);
+        webSocket.sendTXT(flowJson);
+      }
+    }
+  }
+
   static unsigned long lastBtCheck = 0;
   if (millis() - lastBtCheck > 1500) {
     lastBtCheck = millis();

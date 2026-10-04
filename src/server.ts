@@ -954,6 +954,15 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
       } catch {}
     }
 
+    if (textMsg.startsWith('{') && textMsg.includes('"type":"flow_control"')) {
+      try {
+        const parsed = JSON.parse(textMsg);
+        if (typeof parsed.free_bytes === 'number') {
+          a2dpStreamer.updateFlowControl(parsed.free_bytes);
+        }
+      } catch {}
+    }
+
     broadcastToClients(textMsg);
   });
 
