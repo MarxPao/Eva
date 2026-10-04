@@ -139,53 +139,24 @@ import {
 } from './core/agent/barge-in';
 
 // =========================================================================
-// Log Estruturado de Conversação e Histórico Persistente
+// Log Estruturado de Conversação e Histórico Persistente com Telemetria
 // =========================================================================
-export interface ConversationLogEntry {
-  id: string;
-  timestamp: string;
-  timeStr: string;
-  status: 'answered' | 'ignored_ambient' | 'ignored_noise' | 'aec_discarded' | 'error';
-  userInput: string;
-  reply?: string;
-  latencyMs?: number;
-  breakdown?: {
-    sttMs?: number;
-    llmMs?: number;
-    ttsMs?: number;
-  };
-  note?: string;
-}
+import { systemTelemetry, ConversationLogEntry } from './core/instrumentation/system-telemetry';
+export { ConversationLogEntry };
 
-const historyFilePath = path.join(__dirname, '..', 'conversation_history.jsonl');
-export const conversationHistory: ConversationLogEntry[] = [];
-
-try {
-  if (fs.existsSync(historyFilePath)) {
-    const lines = fs.readFileSync(historyFilePath, 'utf8').split('\n').filter(Boolean);
-    for (const line of lines.slice(-100)) {
-      try {
-        conversationHistory.push(JSON.parse(line));
-      } catch {}
-    }
-  }
-} catch {}
+export const conversationHistory: ConversationLogEntry[] = systemTelemetry.getHistory(200);
 
 export function addConversationLogEntry(entry: ConversationLogEntry) {
   conversationHistory.push(entry);
   if (conversationHistory.length > 200) {
     conversationHistory.shift();
   }
-  try {
-    fs.appendFileSync(historyFilePath, JSON.stringify(entry) + '\n');
-  } catch {}
+  systemTelemetry.addEntry(entry);
 }
 
 export function clearConversationHistory() {
   conversationHistory.length = 0;
-  try {
-    fs.writeFileSync(historyFilePath, '');
-  } catch {}
+  systemTelemetry.clearHistory();
 }
 
 // Configurações de Ativação por Voz
@@ -792,6 +763,7 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
   espWsClient = ws;
   a2dpStreamer.setWsClient(ws);
   console.log(`[ESP32 WS] 🔌 Conexão WebSocket estabelecida com ESP32 (${remoteAddress || ESP32_IP})`);
+  systemTelemetry.updateHardware({ esp32Connected: true, esp32Ip: remoteAddress || ESP32_IP });
   broadcastToClients(JSON.stringify({ type: 'hw_status', connected: true, ip: ESP32_IP }));
 
   if (lastBtConnected) {
@@ -972,6 +944,17 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
       } catch {}
     }
 
+    if (textMsg.startsWith('{') && textMsg.includes('"rms"')) {
+      try {
+        const parsed = JSON.parse(textMsg);
+        systemTelemetry.updateHardware({
+          rms: parsed.rms,
+          level: parsed.level,
+          heapFreeKb: parsed.heap,
+        });
+      } catch {}
+    }
+
     broadcastToClients(textMsg);
   });
 
@@ -982,6 +965,7 @@ function setupEsp32WebSocket(ws: WebSocket, remoteAddress?: string) {
     if (espWsClient === ws) {
       espWsClient = null;
       isEspWsConnected = false;
+      systemTelemetry.updateHardware({ esp32Connected: false });
       console.log(`[ESP32 WS] Desconectado do hardware (${reason || 'close'}).`);
       a2dpStreamer.setWsClient(null);
       a2dpStreamer.stop();
@@ -1193,6 +1177,15 @@ const server = http.createServer(async (req, res) => {
         uptime: process.uptime(),
       })
     );
+    return;
+  }
+
+  // =========================================================================
+  // API: Telemetria e Métricas em Tempo Real para Auto-Acesso e Frontend
+  // =========================================================================
+  if (pathname === '/api/telemetry' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(systemTelemetry.getMetricsSummary()));
     return;
   }
 

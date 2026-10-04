@@ -4,6 +4,7 @@ import { criarLembreteTool } from './low-risk/criar-lembrete';
 import { consultarAgendaTool } from './low-risk/consultar-agenda';
 import { buscarWebTool } from './low-risk/buscar-web';
 import { consultarDataHoraTool } from './low-risk/consultar-data-hora';
+import { consultarLogsSistemaTool } from './low-risk/consultar-logs-sistema';
 import { destrancarFechaduraTool } from './sensitive/destrancar-fechadura';
 import { ligarDispositivoTool, desligarDispositivoTool } from './sensitive/dispositivos';
 
@@ -13,6 +14,7 @@ export const ALL_TOOLS = [
   consultarAgendaTool,
   buscarWebTool,
   consultarDataHoraTool,
+  consultarLogsSistemaTool,
   destrancarFechaduraTool,
   ligarDispositivoTool,
   desligarDispositivoTool,
@@ -30,6 +32,7 @@ export {
   consultarAgendaTool,
   buscarWebTool,
   consultarDataHoraTool,
+  consultarLogsSistemaTool,
   destrancarFechaduraTool,
   ligarDispositivoTool,
   desligarDispositivoTool,

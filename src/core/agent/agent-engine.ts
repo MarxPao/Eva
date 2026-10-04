@@ -4,7 +4,7 @@ import { ToolRegistry } from '../tools/tool-registry';
 import { ToolExecutor } from '../tools/tool-executor';
 import { ToolExecutionContext, ToolExecutionResult } from '../tools/types';
 import { CostTracker } from '../instrumentation/cost-tracker';
-import { EVA_SYSTEM_PROMPT, getEvaSystemPrompt, getDynamicTemporalContext } from './system-prompt';
+import { EVA_SYSTEM_PROMPT, getEvaSystemPrompt, getDynamicTemporalContext, getDynamicTelemetryContext } from './system-prompt';
 import { cleanVoiceResponse } from './clean-response';
 import { SentenceAccumulator } from './sentence-stream';
 import { AgentRunOptions, AgentRunResult, AgentStepEvent } from './types';
@@ -57,7 +57,7 @@ export class AgentEngine {
     if (!history.some((m) => m.role === 'system')) {
       const activePrompt = this.systemPrompt === EVA_SYSTEM_PROMPT
         ? getEvaSystemPrompt()
-        : `${this.systemPrompt}\n\n${getDynamicTemporalContext()}`;
+        : `${this.systemPrompt}\n\n${getDynamicTemporalContext()}\n\n${getDynamicTelemetryContext()}`;
       messages.push({ role: 'system', content: activePrompt });
     }
     messages.push(...history);
