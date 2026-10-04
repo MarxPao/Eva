@@ -654,11 +654,20 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
 
     lastConversationActivity = Date.now() + estDurationMs;
 
-    const totalLatency = Math.round(performance.now() - (trace.checkpoints.t0 || trace.baseTime));
+    if (!hasDispatchedFirstAudio) {
+      hasDispatchedFirstAudio = true;
+      trace.mark('t6');
+    }
+
+    const stageDurations = trace.getStageDurations();
+    const timeToFirstAudioMs = stageDurations.totalMs !== undefined
+      ? Math.round(stageDurations.totalMs)
+      : Math.round(performance.now() - (trace.checkpoints.t0 || trace.baseTime));
+
     const breakdown = {
-      sttMs: Math.round(result.telemetry?.latency?.sttMs || sttResult.result.latencyMs || 0),
-      llmMs: Math.round(result.telemetry?.latency?.llmMs || 0),
-      ttsMs: Math.round(result.telemetry?.latency?.ttsMs || 0),
+      sttMs: Math.round(stageDurations.sttMs || result.telemetry?.latency?.sttMs || sttResult.result.latencyMs || 0),
+      llmMs: Math.round(stageDurations.sentenceMs ? ((stageDurations.ttftMs || 0) + stageDurations.sentenceMs) : (result.telemetry?.latency?.llmMs || 0)),
+      ttsMs: Math.round(stageDurations.ttsMs || result.telemetry?.latency?.ttsMs || 0),
     };
 
     const entry: ConversationLogEntry = {
@@ -668,8 +677,9 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
       status: 'answered',
       userInput: userInputText,
       reply: result.agentResult.textResponse,
-      latencyMs: totalLatency,
+      latencyMs: timeToFirstAudioMs,
       breakdown,
+      stageDurations,
       note: 'Respondido com sucesso',
     };
     addConversationLogEntry(entry);
@@ -677,7 +687,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
     console.log(`\n┌────────────────── CONVERSAÇÃO EVA ──────────────────┐`);
     console.log(`│ [${entry.timeStr}] 👤 USUÁRIO: "${userInputText}"`);
     console.log(`│ 🤖 EVA: "${result.agentResult.textResponse}"`);
-    console.log(`│ ⏱️ LATÊNCIA TOTAL: ${totalLatency}ms (STT: ${breakdown.sttMs}ms | LLM: ${breakdown.llmMs}ms | TTS: ${breakdown.ttsMs}ms)`);
+    console.log(`│ ⏱️ LATÊNCIA RESPOSTA (1º ÁUDIO): ${timeToFirstAudioMs}ms (STT: ${breakdown.sttMs}ms | 1ª Frase LLM: ${breakdown.llmMs}ms | TTS: ${breakdown.ttsMs}ms)`);
     console.log(`└─────────────────────────────────────────────────────┘\n`);
 
     // 6. Notifica o ESP32 sobre a fala e o log de conversação para o Monitor Serial
@@ -689,7 +699,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
           status: 'answered',
           user: userInputText,
           reply: result.agentResult.textResponse,
-          latencyMs: totalLatency,
+          latencyMs: timeToFirstAudioMs,
         }));
       } catch (e) {}
     }
@@ -703,6 +713,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
       pendingConfirmation: result.agentResult.pendingConfirmation,
       toolExecutions: result.agentResult.toolExecutions,
       telemetry: result.telemetry,
+      firstAudioLatencyMs: timeToFirstAudioMs,
     }));
 
     broadcastToClients(JSON.stringify({
@@ -710,11 +721,7 @@ async function processVoiceAudioBuffer(audioBuffer: Buffer, trace: PipelineTrace
       entry,
     }));
 
-    if (!hasDispatchedFirstAudio) {
-      trace.mark('t6');
-    }
     console.log(trace.report());
-    const stageDurations = trace.getStageDurations();
     console.log(`[PIPELINE TIMINGS] ⏱️ FimFala->Ingestão: ${stageDurations.uploadMs?.toFixed(1) ?? 'N/A'}ms | STT: ${stageDurations.sttMs?.toFixed(1) ?? 'N/A'}ms | 1ºToken LLM: ${stageDurations.ttftMs?.toFixed(1) ?? 'N/A'}ms | 1ªFrase: ${stageDurations.sentenceMs?.toFixed(1) ?? 'N/A'}ms | TTS: ${stageDurations.ttsMs?.toFixed(1) ?? 'N/A'}ms | Envio ESP32: ${stageDurations.dispatchMs?.toFixed(1) ?? 'N/A'}ms | Total (t6-t0): ${stageDurations.totalMs?.toFixed(1) ?? 'N/A'}ms`);
 
     return {
@@ -1460,6 +1467,21 @@ const server = http.createServer(async (req, res) => {
 
       if (pipelineResult.agentResult.textResponse) {
         recordEvaSpeech(pipelineResult.agentResult.textResponse);
+        addConversationLogEntry({
+          id: currentInteractionId,
+          timestamp: new Date().toISOString(),
+          timeStr: new Date().toLocaleTimeString('pt-BR'),
+          status: 'answered',
+          userInput: message,
+          reply: pipelineResult.agentResult.textResponse,
+          latencyMs: pipelineResult.telemetry.latency.totalMs,
+          breakdown: {
+            sttMs: 0,
+            llmMs: pipelineResult.telemetry.latency.llmMs,
+            ttsMs: 0,
+          },
+          note: 'Chat Web/API',
+        });
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

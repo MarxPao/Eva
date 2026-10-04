@@ -120,9 +120,9 @@ unsigned long lastPostTime = 0;
 #define VAD_SILENCE_RMS           480.0f   // Fim da fala (RMS cai abaixo de 480; evita cortar consoantes/fala suave)
 #define VAD_TRIGGER_FRAMES        3        // 3 frames consecutivos (~48ms de voz sustentada)
 
-// Tempo de silêncio pós-fala otimizado para resposta imediata (~384ms)
-#define VAD_SILENCE_TIMEOUT_MS    380      // Constante única configurável em milissegundos
-#define VAD_SILENCE_FRAMES_END    (VAD_SILENCE_TIMEOUT_MS / 16) // 24 frames (~384ms)
+// Tempo de silêncio pós-fala otimizado para resposta ultra-rápida sub-1s (~272ms)
+#define VAD_SILENCE_TIMEOUT_MS    280      // Constante única configurável em milissegundos
+#define VAD_SILENCE_FRAMES_END    (VAD_SILENCE_TIMEOUT_MS / 16) // 17 frames (~272ms)
 #define MIN_SPEECH_FRAMES         4        // Pelo menos 4 frames (~64ms) de energia de voz
 #define MIN_RECORDED_SAMPLES      4800     // Pelo menos 300ms gravados
 
