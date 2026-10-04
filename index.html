@@ -203,6 +203,57 @@
       background: #D98272;
     }
 
+    /* Conector de Saída de Áudio (Caixa BT vs Notebook) */
+    .audio-connector-pill {
+      background: var(--surface-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .audio-connector-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 0 4px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .audio-out-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .audio-out-btn:hover {
+      color: var(--text-primary);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .audio-out-btn.active {
+      background: var(--bg-card);
+      border-color: var(--border-focus);
+      color: var(--text-primary);
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
     /* =========================================================================
        ESTRUTURA RESPONSIVA: CONTAINER PRINCIPAL
        ========================================================================= */
@@ -1480,6 +1531,23 @@
         <span id="theme-btn-text">Dia</span>
       </button>
 
+      <!-- Conector / Seletor de Saída de Áudio (Caixa BT vs Notebook) -->
+      <div class="audio-connector-pill" id="audio-connector-pill" title="Conector de Saída de Áudio: Alternar entre Caixa Bluetooth (ESP32) e Alto-falante do Notebook (Testes)">
+        <span class="audio-connector-label">Áudio:</span>
+        <button type="button" class="audio-out-btn active" id="btn-out-speaker" onclick="setAudioOutput('speaker')" title="Áudio toca exclusivamente na Caixinha Bluetooth (ESP32)">
+          <span>🔊</span>
+          <span>Caixa BT</span>
+        </button>
+        <button type="button" class="audio-out-btn" id="btn-out-notebook" onclick="setAudioOutput('notebook')" title="Áudio toca no Alto-falante do Notebook (Modo Testes)">
+          <span>💻</span>
+          <span>Notebook</span>
+        </button>
+        <button type="button" class="audio-out-btn" id="btn-out-both" onclick="setAudioOutput('both')" title="Áudio toca em Ambos simultaneamente">
+          <span>🔀</span>
+          <span>Ambos</span>
+        </button>
+      </div>
+
       <!-- Badge de Hardware ESP32 -->
       <div class="hw-badge-pill" id="hw-badge-pill" onclick="openConfigModal()" title="Clique para abrir Diagnóstico e Logs">
         <span class="hw-badge-dot offline" id="hw-dot"></span>
@@ -1983,6 +2051,30 @@
             </div>
           </div>
           <input type="checkbox" id="cfg-wake-word-toggle" checked onchange="toggleWakeWordRequirement(this.checked)" style="transform: scale(1.4); cursor: pointer; accent-color: var(--accent-sage);">
+        </div>
+
+        <!-- ROTEAMENTO / CONECTOR DE SAÍDA DE ÁUDIO -->
+        <div style="background: var(--bg-card); padding: 16px 18px; border-radius: 18px; margin-top: 14px; border: 1px solid var(--border-subtle);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              <span>🎛️</span> <span>Destino do Áudio da EVA (Conector de Saída)</span>
+            </div>
+            <span class="cfg-status-pill" id="cfg-audio-dest-tag" style="background: var(--surface-glass);">🔊 Caixa BT</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+            Escolha se o áudio sintetizado deve sair exclusivamente pela Caixinha de Som Bluetooth (ESP32) ou pelos alto-falantes do Notebook para testes e desenvolvimento.
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn-top" id="cfg-btn-out-speaker" onclick="setAudioOutput('speaker')" style="flex: 1; justify-content: center; padding: 8px 14px;">
+              <span>🔊</span> <span>Caixa Bluetooth (ESP32)</span>
+            </button>
+            <button type="button" class="btn-top" id="cfg-btn-out-notebook" onclick="setAudioOutput('notebook')" style="flex: 1; justify-content: center; padding: 8px 14px;">
+              <span>💻</span> <span>Notebook (Modo Teste)</span>
+            </button>
+            <button type="button" class="btn-top" id="cfg-btn-out-both" onclick="setAudioOutput('both')" style="flex: 1; justify-content: center; padding: 8px 14px;">
+              <span>🔀</span> <span>Ambos (Caixa + Notebook)</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2830,11 +2922,69 @@
     let isPlayingQueue = false;
     let hasReceivedStreamedChunks = false;
 
+    // =========================================================================
+    // Roteador / Conector de Saída de Áudio (Etapa 1)
+    // Opções: 'speaker' (Caixa Bluetooth / ESP32) | 'notebook' (Alto-falante do Notebook) | 'both' (Ambos)
+    // =========================================================================
+    let audioOutputDestination = localStorage.getItem('eva_audio_destination') || 'speaker';
+
+    function setAudioOutput(destination) {
+      if (!['speaker', 'notebook', 'both'].includes(destination)) {
+        destination = 'speaker';
+      }
+      audioOutputDestination = destination;
+      localStorage.setItem('eva_audio_destination', destination);
+
+      // Atualiza botões do cabeçalho
+      const btnSpeaker = document.getElementById('btn-out-speaker');
+      const btnNotebook = document.getElementById('btn-out-notebook');
+      const btnBoth = document.getElementById('btn-out-both');
+      if (btnSpeaker) btnSpeaker.classList.toggle('active', destination === 'speaker');
+      if (btnNotebook) btnNotebook.classList.toggle('active', destination === 'notebook');
+      if (btnBoth) btnBoth.classList.toggle('active', destination === 'both');
+
+      // Atualiza botões do modal de configurações
+      const cfgBtnSpeaker = document.getElementById('cfg-btn-out-speaker');
+      const cfgBtnNotebook = document.getElementById('cfg-btn-out-notebook');
+      const cfgBtnBoth = document.getElementById('cfg-btn-out-both');
+      const cfgTag = document.getElementById('cfg-audio-dest-tag');
+
+      if (cfgBtnSpeaker) cfgBtnSpeaker.style.borderColor = destination === 'speaker' ? 'var(--accent-sage)' : '';
+      if (cfgBtnNotebook) cfgBtnNotebook.style.borderColor = destination === 'notebook' ? 'var(--accent-sage)' : '';
+      if (cfgBtnBoth) cfgBtnBoth.style.borderColor = destination === 'both' ? 'var(--accent-sage)' : '';
+
+      const labels = {
+        speaker: '🔊 Caixa BT',
+        notebook: '💻 Notebook (Teste)',
+        both: '🔀 Ambos (Caixa + Note)'
+      };
+      if (cfgTag) cfgTag.textContent = labels[destination] || '🔊 Caixa BT';
+
+      // Se mudou para Caixa BT exclusiva, interrompe qualquer áudio local remanescente
+      if (destination === 'speaker') {
+        if (currentAudio) {
+          try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (e) {}
+          currentAudio = null;
+        }
+        audioQueue = [];
+        isPlayingQueue = false;
+        const banner = document.getElementById('audio-unlock-banner');
+        if (banner) banner.style.display = 'none';
+        appendSerialLog('SYS', '🔊 Roteamento de áudio: Caixa Bluetooth (ESP32). Navegador do notebook silenciado.', 'bt');
+      } else if (destination === 'notebook') {
+        unlockAudioContext();
+        appendSerialLog('SYS', '💻 Roteamento de áudio: Alto-falante do Notebook ATIVO (Modo de Testes).', 'sys');
+      } else {
+        unlockAudioContext();
+        appendSerialLog('SYS', '🔀 Roteamento de áudio: AMBOS ativos (Caixa Bluetooth e Notebook).', 'sys');
+      }
+    }
+
     // Desbloqueia reprodução de áudio na primeira interação do usuário na página
     let audioUnlocked = false;
     function showAudioUnlockBanner() {
       const banner = document.getElementById('audio-unlock-banner');
-      if (banner && !audioUnlocked) {
+      if (banner && !audioUnlocked && audioOutputDestination !== 'speaker') {
         banner.style.display = 'flex';
       }
     }
@@ -2895,6 +3045,28 @@
 
     function enqueueAudioChunk(base64Data) {
       if (!base64Data) return;
+
+      const playOnNotebook = (audioOutputDestination === 'notebook' || audioOutputDestination === 'both');
+      if (!playOnNotebook) {
+        // Roteamento Caixa BT: o áudio toca no ESP32, NÃO no navegador do notebook.
+        // Apenas sincroniza o estado visual do Orb e tag:
+        if (!state.isSpeaking) {
+          state.isSpeaking = true;
+          const orbEl = document.getElementById('orb-trigger');
+          if (orbEl) {
+            orbEl.classList.add('speaking');
+            orbEl.classList.remove('listening', 'thinking');
+          }
+          const tagEl = document.getElementById('voice-state-tag');
+          if (tagEl) {
+            tagEl.textContent = 'EVA falando (na Caixa BT)...';
+            tagEl.style.color = 'var(--text-primary)';
+          }
+        }
+        return;
+      }
+
+      // Modo Notebook ou Ambos: enfileira para reprodução local no navegador
       const audioUrl = `data:audio/mpeg;base64,${base64Data}`;
       audioQueue.push(audioUrl);
       if (!isPlayingQueue) {
@@ -2952,6 +3124,11 @@
     async function playVoiceResponse(replyText) {
       if (isPlayingQueue || state.isSpeaking) return;
       if (!replyText || !replyText.trim()) return;
+
+      const playOnNotebook = (audioOutputDestination === 'notebook' || audioOutputDestination === 'both');
+      if (!playOnNotebook) {
+        return; // Reprodução ocorre exclusivamente pela Caixa BT via ESP32
+      }
 
       try {
         state.isSpeaking = true;
@@ -3483,6 +3660,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initThemeAndClock();
+      setAudioOutput(audioOutputDestination);
       syncBackendStatus();
     });
   </script>
