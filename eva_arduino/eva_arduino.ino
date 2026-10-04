@@ -94,8 +94,8 @@ void printMemoryReport(const char* tag) {
   static esp_bd_addr_t targetBtMac = {0};
   static bool hasTargetMac = false;
 
-  // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (8KB = ~93ms a 44.1kHz mono 16-bit)
-  #define TTS_BUFFER_SIZE (8 * 1024)
+  // Ring Buffer de Áudio TTS para Transmissão Bluetooth A2DP (3KB = ~35ms a 44.1kHz mono 16-bit)
+  #define TTS_BUFFER_SIZE (3 * 1024)
   static uint8_t* ttsRingBuffer = nullptr;
   static volatile size_t ttsHead = 0;
   static volatile size_t ttsTail = 0;
@@ -323,16 +323,16 @@ unsigned long lastPostTime = 0;
 #define VAD_BARGE_IN_THRESHOLD_RMS 4200.0f // Exige voz alta próxima ao microfone para superar o som da caixa
 #define VAD_BARGE_IN_TRIGGER_FRAMES 6      // ~96ms de voz alta sustentada para Barge-In
 
-// Pré-roll circular de ~128ms (8 blocos de 256 amostras) para garantir captura integral do "Eva"
-#define PREROLL_FRAMES            8
+// Pré-roll circular de ~64ms (4 blocos de 256 amostras)
+#define PREROLL_FRAMES            4
 #define PREROLL_SAMPLES           (PREROLL_FRAMES * BUFFER_PAIRS)
 int16_t prerollBuffer[PREROLL_SAMPLES];
 int prerollHead = 0;
 int speechFramesCount = 0;
 
-// Streaming de Áudio em Chunks (T1 - P0 Latency Optimization)
-#define CHUNK_SAMPLES             1024  // 64ms a 16kHz
-#define CHUNK_BYTES               (CHUNK_SAMPLES * sizeof(int16_t)) // 2048 bytes
+// Streaming de Áudio em Chunks Ultra-rápidos (32ms a 16kHz)
+#define CHUNK_SAMPLES             512
+#define CHUNK_BYTES               (CHUNK_SAMPLES * sizeof(int16_t)) // 1024 bytes
 int16_t streamChunkBuffer[CHUNK_SAMPLES];
 size_t streamChunkIndex = 0;
 uint32_t streamDroppedChunks = 0;
@@ -891,7 +891,7 @@ void loop() {
 #endif
 
   size_t bytesRead = 0;
-  esp_err_t res = i2s_channel_read(rx_chan, audioBuffer, sizeof(audioBuffer), &bytesRead, portMAX_DELAY);
+  esp_err_t res = i2s_channel_read(rx_chan, audioBuffer, sizeof(audioBuffer), &bytesRead, pdMS_TO_TICKS(20));
 
   // Variáveis estáticas de controle de canal e filtro DC-Blocker
   static int activeMicChannel = 0; // 0 = Left, 1 = Right
